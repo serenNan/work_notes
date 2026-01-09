@@ -1,0 +1,32 @@
+# Build and cache directories
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+.cache/
+.pytest_cache/
+build/
+dist/
+*.egg-info/
+
+# IDE and editor files
+.vscode/
+.history/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Temporary files
+_temp_processed.md
+reference_template.docx
+*.tmp
+
+# Generated output (optional - uncomment if you want to ignore all Word files)
+# *.docx

@@ -303,15 +303,51 @@ def convert_md_to_docx(input_file: str, output_file: str, reference_doc: str = N
                 pass
 
 
+def add_table_borders(table) -> None:
+    """
+    为表格添加完整的边框
+
+    Args:
+        table: Word 表格对象
+    """
+    from docx.oxml import parse_xml
+    from docx.oxml.ns import nsdecls
+
+    # 获取表格属性
+    tbl = table._element
+    tblPr = tbl.tblPr
+
+    # 创建完整的表格边框设置
+    tblBorders = parse_xml(
+        f'<w:tblBorders {nsdecls("w")}>'
+        '<w:top w:val="single" w:sz="12" w:space="0" w:color="000000"/>'
+        '<w:left w:val="single" w:sz="12" w:space="0" w:color="000000"/>'
+        '<w:bottom w:val="single" w:sz="12" w:space="0" w:color="000000"/>'
+        '<w:right w:val="single" w:sz="12" w:space="0" w:color="000000"/>'
+        '<w:insideH w:val="single" w:sz="12" w:space="0" w:color="000000"/>'
+        '<w:insideV w:val="single" w:sz="12" w:space="0" w:color="000000"/>'
+        '</w:tblBorders>'
+    )
+
+    # 移除旧的边框设置（如果有）
+    old_borders = tblPr.find('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}tblBorders')
+    if old_borders is not None:
+        tblPr.remove(old_borders)
+
+    # 添加新的边框设置
+    tblPr.append(tblBorders)
+
+
 def apply_chinese_fonts_to_docx(docx_path: str) -> bool:
     """
-    对生成的 Word 文档应用中文字体设置
+    对生成的 Word 文档应用中文字体设置和表格边框
 
     在 pandoc 转换后，进一步确保字体设置正确：
     - 正文：宋体
     - 标题：宋体加粗，黑色，非斜体
     - 代码：Times New Roman
     - 目录：Times New Roman，五号（10.5pt），1.0行间距
+    - 表格：添加完整的边框线
 
     Args:
         docx_path: Word 文档路径
@@ -375,8 +411,12 @@ def apply_chinese_fonts_to_docx(docx_path: str) -> bool:
                     run.font.name = '宋体'
                     run._element.rPr.rFonts.set(qn('w:eastAsia'), '宋体')
 
-        # 遍历所有表格
+        # 遍历所有表格，添加边框并设置字体
         for table in doc.tables:
+            # 添加表格边框
+            add_table_borders(table)
+
+            # 设置表格内容字体
             for row in table.rows:
                 for cell in row.cells:
                     for para in cell.paragraphs:
@@ -385,7 +425,7 @@ def apply_chinese_fonts_to_docx(docx_path: str) -> bool:
                             run._element.rPr.rFonts.set(qn('w:eastAsia'), '宋体')
 
         doc.save(docx_path)
-        print(f"字体设置已应用到: {docx_path}")
+        print(f"字体设置和表格边框已应用到: {docx_path}")
         return True
 
     except Exception as e:
