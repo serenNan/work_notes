@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown 转 Word</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📄 Markdown 转 Word</h1>
+            <p>将 Markdown 文件转换为 Word 文档</p>
+        </header>
+
+        <main>
+            <!-- 拖拽上传区域 -->
+            <div class="upload-section">
+                <div class="drop-zone" id="dropZone">
+                    <div class="drop-content">
+                        <svg class="upload-icon" viewBox="0 0 24 24" width="48" height="48">
+                            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"/>
+                        </svg>
+                        <p class="drop-text">拖拽 MD 文件到此处</p>
+                        <p class="drop-subtext">或<span class="click-here">点击选择</span>文件</p>
+                        <input type="file" id="fileInput" accept=".md,.markdown" hidden>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 转换选项 -->
+            <div class="options-section" id="optionsSection" style="display: none;">
+                <div class="option-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="generateToc" checked>
+                        <span>生成目录</span>
+                    </label>
+                </div>
+
+                <div class="option-group">
+                    <label for="highlightStyle">代码高亮:</label>
+                    <select id="highlightStyle" class="select-input">
+                        <option value="tango">Tango</option>
+                        <option value="pygments">Pygments</option>
+                        <option value="espresso">Espresso</option>
+                        <option value="monochrome">Monochrome</option>
+                    </select>
+                </div>
+
+                <div class="button-group">
+                    <button id="convertBtn" class="btn btn-primary">开始转换</button>
+                    <button id="resetBtn" class="btn btn-secondary">返回</button>
+                </div>
+            </div>
+
+            <!-- 转换进度 -->
+            <div class="progress-section" id="progressSection" style="display: none;">
+                <p id="progressText">转换中，请稍候...</p>
+                <div class="spinner"></div>
+            </div>
+
+            <!-- 转换结果 -->
+            <div class="result-section" id="resultSection" style="display: none;">
+                <div class="result-box success">
+                    <svg class="result-icon" viewBox="0 0 24 24" width="48" height="48">
+                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/>
+                    </svg>
+                    <p id="resultText">转换完成！</p>
+                    <div class="result-buttons">
+                        <a id="downloadBtn" class="btn btn-primary" download>下载文件</a>
+                        <button id="newConvertBtn" class="btn btn-secondary">继续转换</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 错误提示 -->
+            <div class="error-section" id="errorSection" style="display: none;">
+                <div class="result-box error">
+                    <svg class="result-icon" viewBox="0 0 24 24" width="48" height="48">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="currentColor"/>
+                    </svg>
+                    <p id="errorText">转换失败</p>
+                    <button id="retryBtn" class="btn btn-secondary">重试</button>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>由 Flask + Pandoc 驱动 | 支持格式：.md</p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
