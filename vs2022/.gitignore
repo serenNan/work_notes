@@ -1,0 +1,35 @@
+# Build directories
+bin/
+obj/
+build/
+x64/
+x86/
+Debug/
+Release/
+
+# Visual Studio files
+.vs/
+*.user
+*.suo
+*.cache
+*.ncb
+*.sdf
+*.opensdf
+*.VC.db
+*.VC.opendb
+
+# Common temp/build folders
+.vscode/
+.history/
+screenshots/
+.cache/
+
+# Compiled files
+*.exe
+*.dll
+*.pdb
+*.ilk
+*.obj
+*.o
+*.lib
+*.exp
