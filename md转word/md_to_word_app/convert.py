@@ -5,9 +5,9 @@
 Pandoc 安装位置: S:/Tools/Miniconda/envs/pandoc/Library/bin/pandoc.exe
 运行方式: 可以用任意 Python 环境运行此脚本
 
-功能：
-1. 预处理 Markdown：去掉章节分割符 ---
-2. 使用自定义参考模板：正文宋体，代码 Times New Roman
+功能:
+1. 预处理 Markdown: 去掉章节分割符 ---
+2. 使用自定义参考模板: 正文宋体, 代码 Times New Roman
 """
 
 import subprocess
@@ -32,7 +32,7 @@ def preprocess_markdown(content: str) -> str:
     Returns:
         处理后的 Markdown 内容
     """
-    # 匹配独立行的水平线：行首可能有空格，然后是3个或更多的 - 或 * 或 _
+    # 匹配独立行的水平线: 行首可能有空格, 然后是3个或更多的 - 或 * 或 _
     # 去掉这些分割线
     lines = content.split('\n')
     processed_lines = []
@@ -52,7 +52,7 @@ def create_reference_docx(output_path: str) -> bool:
     """
     创建自定义 Word 参考模板
 
-    样式设置：
+    样式设置:
     - 正文使用宋体
     - 代码使用 Times New Roman
 
@@ -68,7 +68,7 @@ def create_reference_docx(output_path: str) -> bool:
         from docx.oxml.ns import qn
         from docx.oxml import OxmlElement
     except ImportError:
-        print("警告: python-docx 未安装，将尝试使用 pandoc 默认模板")
+        print("警告: python-docx 未安装, 将尝试使用 pandoc 默认模板")
         print("安装方法: pip install python-docx")
         return False
 
@@ -92,7 +92,7 @@ def create_reference_docx(output_path: str) -> bool:
             with open(temp_template, 'wb') as f:
                 f.write(result.stdout)
         else:
-            # 如果无法获取默认模板，创建一个最小的 docx
+            # 如果无法获取默认模板, 创建一个最小的 docx
             doc = Document()
             doc.save(temp_template)
 
@@ -114,7 +114,7 @@ def create_reference_docx(output_path: str) -> bool:
             normal_style._element.rPr.rFonts.set(qn('w:eastAsia'), '宋体')
             normal_style.font.size = Pt(12)
 
-        # 设置各级标题样式 - 宋体加粗，黑色，非斜体
+        # 设置各级标题样式 - 宋体加粗, 黑色, 非斜体
         for i in range(1, 10):
             heading_name = f'Heading {i}'
             if heading_name in [s.name for s in styles]:
@@ -125,7 +125,7 @@ def create_reference_docx(output_path: str) -> bool:
                 heading_style.font.italic = False  # 取消斜体
                 heading_style.font.color.rgb = RGBColor(0, 0, 0)  # 黑色
 
-        # 设置目录样式 - Times New Roman，五号（10.5pt），1.0行间距
+        # 设置目录样式 - Times New Roman, 五号（10.5pt）, 1.0行间距
         from docx.shared import Twips
         from docx.enum.text import WD_LINE_SPACING
         for i in range(1, 10):
@@ -224,7 +224,7 @@ def convert_md_to_docx(input_file: str, output_file: str, reference_doc: str = N
         print(f"  已移除 {removed_count} 个水平分割线")
 
     # 创建临时文件存储预处理后的内容
-    # 注意：临时文件必须放在原md文件同目录，以便正确解析相对路径的图片
+    # 注意: 临时文件必须放在原md文件同目录, 以便正确解析相对路径的图片
     input_dir = os.path.dirname(os.path.abspath(input_file))
     temp_md = os.path.join(input_dir, '_temp_processed.md')
 
@@ -248,7 +248,7 @@ def convert_md_to_docx(input_file: str, output_file: str, reference_doc: str = N
         '--resource-path', input_dir,  # 指定图片等资源的搜索路径
     ]
 
-    # 如果有参考模板，添加到命令中
+    # 如果有参考模板, 添加到命令中
     if reference_doc and os.path.exists(reference_doc):
         cmd.extend(['--reference-doc', reference_doc])
         print(f"使用参考模板: {reference_doc}")
@@ -259,13 +259,13 @@ def convert_md_to_docx(input_file: str, output_file: str, reference_doc: str = N
     print(f"执行命令: {' '.join(cmd)}")
 
     try:
-        # 执行 pandoc 命令，设置工作目录为原md文件所在目录
+        # 执行 pandoc 命令, 设置工作目录为原md文件所在目录
         result = subprocess.run(
             cmd,
             capture_output=True,
             text=True,
             encoding='utf-8',
-            cwd=input_dir  # 关键：设置工作目录以正确解析相对路径
+            cwd=input_dir  # 关键: 设置工作目录以正确解析相对路径
         )
 
         if result.returncode == 0:
@@ -288,7 +288,7 @@ def convert_md_to_docx(input_file: str, output_file: str, reference_doc: str = N
             return False
 
     except FileNotFoundError:
-        print("错误: 找不到 pandoc 命令，请确保已安装 pandoc")
+        print("错误: 找不到 pandoc 命令, 请确保已安装 pandoc")
         print("安装方法: conda install -c conda-forge pandoc")
         return False
     except Exception as e:
@@ -342,12 +342,12 @@ def apply_chinese_fonts_to_docx(docx_path: str) -> bool:
     """
     对生成的 Word 文档应用中文字体设置和表格边框
 
-    在 pandoc 转换后，进一步确保字体设置正确：
-    - 正文：宋体
-    - 标题：宋体加粗，黑色，非斜体
-    - 代码：Times New Roman
-    - 目录：Times New Roman，五号（10.5pt），1.0行间距
-    - 表格：添加完整的边框线
+    在 pandoc 转换后, 进一步确保字体设置正确:
+    - 正文: 宋体
+    - 标题: 宋体加粗, 黑色, 非斜体
+    - 代码: Times New Roman
+    - 目录: Times New Roman, 五号（10.5pt）, 1.0行间距
+    - 表格: 添加完整的边框线
 
     Args:
         docx_path: Word 文档路径
@@ -361,7 +361,7 @@ def apply_chinese_fonts_to_docx(docx_path: str) -> bool:
         from docx.oxml.ns import qn
         from docx.enum.text import WD_LINE_SPACING
     except ImportError:
-        print("警告: python-docx 未安装，无法后处理字体")
+        print("警告: python-docx 未安装, 无法后处理字体")
         return False
 
     try:
@@ -393,14 +393,14 @@ def apply_chinese_fonts_to_docx(docx_path: str) -> bool:
                     run._element.rPr.rFonts.set(qn('w:ascii'), 'Times New Roman')
                     run._element.rPr.rFonts.set(qn('w:hAnsi'), 'Times New Roman')
                 elif is_toc:
-                    # 目录使用 Times New Roman，五号（10.5pt）
+                    # 目录使用 Times New Roman, 五号（10.5pt）
                     run.font.name = 'Times New Roman'
                     run._element.rPr.rFonts.set(qn('w:ascii'), 'Times New Roman')
                     run._element.rPr.rFonts.set(qn('w:hAnsi'), 'Times New Roman')
                     run.font.size = Pt(10.5)  # 五号字体
                     run.font.color.rgb = RGBColor(0, 0, 0)  # 黑色
                 elif is_heading:
-                    # 标题使用宋体，黑色，非斜体
+                    # 标题使用宋体, 黑色, 非斜体
                     run.font.name = '宋体'
                     run._element.rPr.rFonts.set(qn('w:eastAsia'), '宋体')
                     run.font.color.rgb = RGBColor(0, 0, 0)  # 黑色
@@ -411,7 +411,7 @@ def apply_chinese_fonts_to_docx(docx_path: str) -> bool:
                     run.font.name = '宋体'
                     run._element.rPr.rFonts.set(qn('w:eastAsia'), '宋体')
 
-        # 遍历所有表格，添加边框并设置字体
+        # 遍历所有表格, 添加边框并设置字体
         for table in doc.tables:
             # 添加表格边框
             add_table_borders(table)
@@ -485,12 +485,12 @@ def convert_single_file(input_md: str, output_docx: str = None) -> bool:
 
     Args:
         input_md: 输入 Markdown 文件路径
-        output_docx: 输出 Word 文件路径（可选，默认同名）
+        output_docx: 输出 Word 文件路径（可选, 默认同名）
 
     Returns:
         是否成功
     """
-    # 如果没有指定输出文件，使用同名的 .docx
+    # 如果没有指定输出文件, 使用同名的 .docx
     if output_docx is None:
         output_docx = os.path.splitext(input_md)[0] + '.docx'
 
@@ -513,7 +513,7 @@ def convert_single_file(input_md: str, output_docx: str = None) -> bool:
     if template_created:
         success = convert_md_to_docx(input_md, output_docx, reference_docx)
     else:
-        print("参考模板创建失败，使用默认样式转换...")
+        print("参考模板创建失败, 使用默认样式转换...")
         success = convert_md_to_docx(input_md, output_docx)
     print()
 
@@ -526,7 +526,7 @@ def convert_single_file(input_md: str, output_docx: str = None) -> bool:
     print("=" * 60)
 
     if not success:
-        # 如果失败，尝试简单模式
+        # 如果失败, 尝试简单模式
         print("\n尝试简单模式...")
         output_docx_simple = os.path.splitext(input_md)[0] + '_simple.docx'
         convert_md_to_docx_simple(input_md, output_docx_simple)
@@ -549,7 +549,7 @@ Markdown 转 Word 转换工具
 
 用法:
   python convert.py                      # 转换当前目录下所有 .md 文件
-  python convert.py <input.md>           # 转换指定文件，输出同名 .docx
+  python convert.py <input.md>           # 转换指定文件, 输出同名 .docx
   python convert.py <input.md> <out.docx> # 指定输入和输出文件
   python convert.py --list               # 列出当前目录的 .md 文件
   python convert.py --help               # 显示帮助
@@ -566,9 +566,9 @@ Markdown 转 Word 转换工具
 if __name__ == '__main__':
     import argparse
 
-    # 如果没有参数，检查是否有 .md 文件
+    # 如果没有参数, 检查是否有 .md 文件
     if len(sys.argv) == 1:
-        # 自动模式：转换当前目录的所有 .md 文件
+        # 自动模式: 转换当前目录的所有 .md 文件
         cwd = os.getcwd()
         md_files = find_md_files(cwd)
 
