@@ -1,30 +1,21 @@
 # -*- coding: utf-8 -*-
 """
-主窗口 UI - 支持浅色/深色主题切换 + 实时预览
+主窗口 UI - 支持浅色/深色主题切换
 """
 
 import os
 import subprocess
 import sys
-import tempfile
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QCheckBox, QComboBox, QSpinBox,
-    QGroupBox, QFileDialog, QMessageBox, QFrame, QGraphicsDropShadowEffect,
-    QSplitter, QTextBrowser, QScrollArea, QSizePolicy
+    QGroupBox, QFileDialog, QMessageBox, QFrame
 )
-from PyQt5.QtCore import Qt, QThread, pyqtSignal, QSettings, QTimer
-from PyQt5.QtGui import QDragEnterEvent, QDropEvent, QFont, QColor
+from PyQt5.QtCore import Qt, QThread, pyqtSignal, QSettings
+from PyQt5.QtGui import QDragEnterEvent, QDropEvent, QFont, QPixmap
 
 # 导入转换服务
 from core.converter import ConverterService
-
-# 获取 assets 目录
-ASSETS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets")
-DEMO_MD_PATH = os.path.join(ASSETS_DIR, "demo.md")
-
-# Pandoc 路径
-PANDOC_PATH = r'S:\Tools\Miniconda\envs\pandoc\Library\bin\pandoc.exe'
 
 
 # 深色主题配色
@@ -47,11 +38,7 @@ DARK_COLORS = {
     'success_bg': 'rgba(34, 197, 94, 0.08)',
     'success_border': 'rgba(34, 197, 94, 0.3)',
     'error': '#ef4444',
-    'warning': '#f59e0b',
-    'shadow_color': 'rgba(0, 0, 0, 80)',
     'drag_bg': 'rgba(59, 130, 246, 0.1)',
-    'preview_bg': '#1a1a1a',
-    'code_bg': '#2d2d2d',
 }
 
 # 浅色主题配色
@@ -74,11 +61,7 @@ LIGHT_COLORS = {
     'success_bg': 'rgba(22, 163, 74, 0.08)',
     'success_border': 'rgba(22, 163, 74, 0.3)',
     'error': '#dc2626',
-    'warning': '#d97706',
-    'shadow_color': 'rgba(0, 0, 0, 40)',
     'drag_bg': 'rgba(37, 99, 235, 0.08)',
-    'preview_bg': '#ffffff',
-    'code_bg': '#f5f5f5',
 }
 
 
@@ -256,50 +239,6 @@ QMessageBox QPushButton {{
     min-width: 90px;
     padding: 8px 16px;
 }}
-
-/* 分割器样式 */
-QSplitter::handle {{
-    background-color: {colors['border_subtle']};
-}}
-
-QSplitter::handle:horizontal {{
-    width: 2px;
-}}
-
-/* 文本浏览器样式 */
-QTextBrowser {{
-    background-color: {colors['preview_bg']};
-    border: 1px solid {colors['border_subtle']};
-    border-radius: 8px;
-    padding: 16px;
-    color: {colors['text_primary']};
-}}
-
-/* 滚动区域样式 */
-QScrollArea {{
-    border: none;
-    background-color: transparent;
-}}
-
-QScrollBar:vertical {{
-    background-color: {colors['bg_secondary']};
-    width: 10px;
-    border-radius: 5px;
-}}
-
-QScrollBar::handle:vertical {{
-    background-color: {colors['border_default']};
-    border-radius: 5px;
-    min-height: 30px;
-}}
-
-QScrollBar::handle:vertical:hover {{
-    background-color: {colors['border_hover']};
-}}
-
-QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
-    height: 0;
-}}
 """
 
 
@@ -330,151 +269,6 @@ class ConverterThread(QThread):
                 self.error.emit(message)
         except Exception as e:
             self.error.emit(str(e))
-
-
-class PreviewThread(QThread):
-    """预览生成线程"""
-    finished = pyqtSignal(str)
-    error = pyqtSignal(str)
-
-    def __init__(self, md_path, options, colors):
-        super().__init__()
-        self.md_path = md_path
-        self.options = options
-        self.colors = colors
-
-    def run(self):
-        try:
-            # 使用 pandoc 转换为 HTML
-            cmd = [
-                PANDOC_PATH,
-                self.md_path,
-                '-f', 'markdown+tex_math_dollars+raw_tex',
-                '-t', 'html5',
-                '--standalone',
-                f'--highlight-style={self.options.get("highlight_style", "tango")}',
-                '--mathjax',
-            ]
-
-            # 添加目录
-            if self.options.get('generate_toc', True):
-                cmd.append('--toc')
-                cmd.append(f'--toc-depth={self.options.get("toc_depth", 3)}')
-
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                encoding='utf-8',
-                cwd=os.path.dirname(self.md_path)
-            )
-
-            if result.returncode == 0:
-                # 添加自定义样式
-                html = self.inject_custom_styles(result.stdout)
-                self.finished.emit(html)
-            else:
-                self.error.emit(result.stderr)
-
-        except Exception as e:
-            self.error.emit(str(e))
-
-    def inject_custom_styles(self, html):
-        """注入自定义样式以匹配主题"""
-        colors = self.colors
-        custom_css = f"""
-        <style>
-        body {{
-            font-family: "Segoe UI", "Microsoft YaHei UI", sans-serif;
-            background-color: {colors['preview_bg']};
-            color: {colors['text_primary']};
-            padding: 20px;
-            line-height: 1.6;
-            max-width: 100%;
-        }}
-        h1, h2, h3, h4, h5, h6 {{
-            color: {colors['text_primary']};
-            margin-top: 1.5em;
-            margin-bottom: 0.5em;
-        }}
-        h1 {{ font-size: 1.8em; border-bottom: 2px solid {colors['accent_primary']}; padding-bottom: 0.3em; }}
-        h2 {{ font-size: 1.5em; border-bottom: 1px solid {colors['border_default']}; padding-bottom: 0.2em; }}
-        h3 {{ font-size: 1.2em; }}
-        code {{
-            background-color: {colors['code_bg']};
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-family: "Consolas", "Monaco", monospace;
-            font-size: 0.9em;
-        }}
-        pre {{
-            background-color: {colors['code_bg']};
-            padding: 16px;
-            border-radius: 8px;
-            overflow-x: auto;
-            border: 1px solid {colors['border_subtle']};
-        }}
-        pre code {{
-            background-color: transparent;
-            padding: 0;
-        }}
-        table {{
-            border-collapse: collapse;
-            width: 100%;
-            margin: 1em 0;
-        }}
-        th, td {{
-            border: 1px solid {colors['border_default']};
-            padding: 10px 12px;
-            text-align: left;
-        }}
-        th {{
-            background-color: {colors['bg_elevated']};
-            font-weight: 600;
-        }}
-        blockquote {{
-            border-left: 4px solid {colors['accent_primary']};
-            margin: 1em 0;
-            padding: 0.5em 1em;
-            background-color: {colors['bg_secondary']};
-            color: {colors['text_secondary']};
-        }}
-        a {{
-            color: {colors['accent_primary']};
-            text-decoration: none;
-        }}
-        a:hover {{
-            text-decoration: underline;
-        }}
-        hr {{
-            border: none;
-            border-top: 1px solid {colors['border_default']};
-            margin: 2em 0;
-        }}
-        #TOC {{
-            background-color: {colors['bg_secondary']};
-            padding: 16px;
-            border-radius: 8px;
-            margin-bottom: 2em;
-        }}
-        #TOC ul {{
-            list-style-type: none;
-            padding-left: 1em;
-        }}
-        #TOC > ul {{
-            padding-left: 0;
-        }}
-        #TOC a {{
-            color: {colors['text_secondary']};
-        }}
-        </style>
-        """
-        # 在 </head> 前插入样式
-        if '</head>' in html:
-            html = html.replace('</head>', custom_css + '</head>')
-        else:
-            html = custom_css + html
-        return html
 
 
 class DropZone(QFrame):
@@ -747,16 +541,12 @@ class ThemeToggleButton(QPushButton):
 
 
 class MainWindow(QMainWindow):
-    """主窗口 - 支持主题切换和实时预览"""
+    """主窗口 - 支持主题切换"""
 
     def __init__(self):
         super().__init__()
         self.current_file = None
         self.converter_thread = None
-        self.preview_thread = None
-        self.preview_timer = QTimer()
-        self.preview_timer.setSingleShot(True)
-        self.preview_timer.timeout.connect(self.generate_preview)
 
         # 加载用户主题偏好
         self.settings = QSettings("MD2Word", "MarkdownToWord")
@@ -765,9 +555,6 @@ class MainWindow(QMainWindow):
 
         self.setup_ui()
         self.apply_theme()
-
-        # 初始加载预览
-        QTimer.singleShot(500, self.generate_preview)
 
     def apply_theme(self):
         self.colors = DARK_COLORS if self.is_dark_theme else LIGHT_COLORS
@@ -811,6 +598,14 @@ class MainWindow(QMainWindow):
 
         self.separator.setStyleSheet(f"background-color: {self.colors['border_subtle']}; max-height: 1px;")
 
+        # 高亮预览
+        self.highlight_preview.setStyleSheet(f"""
+            background-color: {self.colors['bg_secondary']};
+            border: 1px solid {self.colors['border_subtle']};
+            border-radius: 6px;
+            padding: 4px;
+        """)
+
         self.status_label.setStyleSheet(f"""
             color: {self.colors['text_muted']};
             font-size: 13px;
@@ -844,24 +639,6 @@ class MainWindow(QMainWindow):
             background: transparent;
         """)
 
-        # 预览区域
-        self.preview_title.setStyleSheet(f"""
-            font-size: 14px;
-            font-weight: 600;
-            color: {self.colors['text_secondary']};
-            background: transparent;
-        """)
-        self.preview_browser.setStyleSheet(f"""
-            QTextBrowser {{
-                background-color: {self.colors['preview_bg']};
-                border: 1px solid {self.colors['border_subtle']};
-                border-radius: 8px;
-            }}
-        """)
-
-        # 重新生成预览以更新主题
-        self.schedule_preview_update()
-
     def toggle_theme(self):
         self.is_dark_theme = not self.is_dark_theme
         self.settings.setValue("dark_theme", self.is_dark_theme)
@@ -869,27 +646,15 @@ class MainWindow(QMainWindow):
 
     def setup_ui(self):
         self.setWindowTitle("Markdown to Word")
-        self.setMinimumSize(1100, 750)
-        self.resize(1200, 850)
+        self.setMinimumSize(500, 750)
+        self.resize(520, 850)
 
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
 
-        main_layout = QHBoxLayout(self.central_widget)
-        main_layout.setContentsMargins(0, 0, 0, 0)
-        main_layout.setSpacing(0)
-
-        # 创建分割器
-        splitter = QSplitter(Qt.Horizontal)
-        splitter.setHandleWidth(1)
-
-        # 左侧面板 - 设置
-        left_panel = QWidget()
-        left_panel.setMinimumWidth(380)
-        left_panel.setMaximumWidth(450)
-        left_layout = QVBoxLayout(left_panel)
-        left_layout.setContentsMargins(24, 20, 12, 20)
-        left_layout.setSpacing(16)
+        main_layout = QVBoxLayout(self.central_widget)
+        main_layout.setContentsMargins(24, 20, 24, 20)
+        main_layout.setSpacing(16)
 
         # 顶部栏
         top_bar = QHBoxLayout()
@@ -899,17 +664,17 @@ class MainWindow(QMainWindow):
         self.theme_btn = ThemeToggleButton(self.is_dark_theme, self.colors)
         self.theme_btn.clicked.connect(self.toggle_theme)
         top_bar.addWidget(self.theme_btn)
-        left_layout.addLayout(top_bar)
+        main_layout.addLayout(top_bar)
 
         # 拖拽区域
         self.drop_zone = DropZone(self.colors)
         self.drop_zone.file_dropped.connect(self.on_file_dropped)
-        left_layout.addWidget(self.drop_zone)
+        main_layout.addWidget(self.drop_zone)
 
         # 选择文件按钮
         self.select_btn = SecondaryButton("浏览文件...", self.colors)
         self.select_btn.clicked.connect(self.on_select_file)
-        left_layout.addWidget(self.select_btn)
+        main_layout.addWidget(self.select_btn)
 
         # 配置选项组
         self.options_group = QGroupBox("转换选项")
@@ -920,7 +685,7 @@ class MainWindow(QMainWindow):
         # 生成目录
         self.toc_checkbox = QCheckBox("生成目录")
         self.toc_checkbox.setChecked(True)
-        self.toc_checkbox.stateChanged.connect(self.on_setting_changed)
+        self.toc_checkbox.stateChanged.connect(self.on_toc_changed)
         options_layout.addWidget(self.toc_checkbox)
 
         # 目录深度
@@ -932,7 +697,6 @@ class MainWindow(QMainWindow):
         self.toc_depth_spin.setRange(1, 6)
         self.toc_depth_spin.setValue(3)
         self.toc_depth_spin.setFixedWidth(70)
-        self.toc_depth_spin.valueChanged.connect(self.on_setting_changed)
         toc_depth_layout.addWidget(self.toc_depth_spin)
         toc_depth_layout.addStretch()
         options_layout.addLayout(toc_depth_layout)
@@ -950,23 +714,36 @@ class MainWindow(QMainWindow):
         self.highlight_combo = QComboBox()
         self.highlight_combo.addItems(['tango', 'pygments', 'espresso', 'monochrome', 'kate', 'zenburn'])
         self.highlight_combo.setFixedWidth(120)
-        self.highlight_combo.currentTextChanged.connect(self.on_setting_changed)
+        self.highlight_combo.currentTextChanged.connect(self.on_highlight_changed)
         highlight_layout.addWidget(self.highlight_combo)
         highlight_layout.addStretch()
         options_layout.addLayout(highlight_layout)
 
-        left_layout.addWidget(self.options_group)
+        # 代码高亮预览图
+        self.highlight_preview = QLabel()
+        self.highlight_preview.setAlignment(Qt.AlignCenter)
+        self.highlight_preview.setStyleSheet(f"""
+            background-color: {self.colors['bg_secondary']};
+            border: 1px solid {self.colors['border_subtle']};
+            border-radius: 6px;
+            padding: 4px;
+        """)
+        self.highlight_preview.setMinimumHeight(80)
+        options_layout.addWidget(self.highlight_preview)
+        self.update_highlight_preview('tango')
+
+        main_layout.addWidget(self.options_group)
 
         # 转换按钮
         self.convert_btn = GradientButton("开始转换", self.colors)
         self.convert_btn.clicked.connect(self.on_convert)
         self.convert_btn.setEnabled(False)
-        left_layout.addWidget(self.convert_btn)
+        main_layout.addWidget(self.convert_btn)
 
         # 状态标签
         self.status_label = QLabel("")
         self.status_label.setAlignment(Qt.AlignCenter)
-        left_layout.addWidget(self.status_label)
+        main_layout.addWidget(self.status_label)
 
         # 结果区域
         self.result_frame = QFrame()
@@ -1000,70 +777,35 @@ class MainWindow(QMainWindow):
         result_layout.addLayout(result_btn_layout)
 
         self.result_frame.hide()
-        left_layout.addWidget(self.result_frame)
+        main_layout.addWidget(self.result_frame)
 
-        left_layout.addStretch()
+        main_layout.addStretch()
 
-        # 右侧面板 - 预览
-        right_panel = QWidget()
-        right_layout = QVBoxLayout(right_panel)
-        right_layout.setContentsMargins(12, 20, 24, 20)
-        right_layout.setSpacing(12)
-
-        # 预览标题
-        preview_header = QHBoxLayout()
-        self.preview_title = QLabel("实时预览")
-        preview_header.addWidget(self.preview_title)
-        preview_header.addStretch()
-        right_layout.addLayout(preview_header)
-
-        # 预览浏览器
-        self.preview_browser = QTextBrowser()
-        self.preview_browser.setOpenExternalLinks(True)
-        self.preview_browser.setMinimumWidth(500)
-        right_layout.addWidget(self.preview_browser)
-
-        # 添加到分割器
-        splitter.addWidget(left_panel)
-        splitter.addWidget(right_panel)
-        splitter.setStretchFactor(0, 0)
-        splitter.setStretchFactor(1, 1)
-
-        main_layout.addWidget(splitter)
-
-    def on_setting_changed(self):
-        """设置变更时触发预览更新"""
+    def on_toc_changed(self):
+        """目录选项变更"""
         self.toc_depth_spin.setEnabled(self.toc_checkbox.isChecked())
-        self.schedule_preview_update()
 
-    def schedule_preview_update(self):
-        """延迟更新预览，避免频繁刷新"""
-        self.preview_timer.start(300)
+    def on_highlight_changed(self, style):
+        """高亮样式变更"""
+        self.update_highlight_preview(style)
 
-    def generate_preview(self):
-        """生成预览"""
-        if not os.path.exists(DEMO_MD_PATH):
-            self.preview_browser.setHtml("<p>Demo file not found</p>")
-            return
+    def update_highlight_preview(self, style):
+        """更新高亮预览图"""
+        # 获取图片路径
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        # 处理 zenburn 拼写错误的文件名
+        filename = 'zneburn.png' if style == 'zenburn' else f'{style}.png'
+        image_path = os.path.join(base_dir, 'assets', '代码高亮图', filename)
 
-        options = {
-            'generate_toc': self.toc_checkbox.isChecked(),
-            'toc_depth': self.toc_depth_spin.value(),
-            'highlight_style': self.highlight_combo.currentText()
-        }
-
-        self.preview_thread = PreviewThread(DEMO_MD_PATH, options, self.colors)
-        self.preview_thread.finished.connect(self.on_preview_finished)
-        self.preview_thread.error.connect(self.on_preview_error)
-        self.preview_thread.start()
-
-    def on_preview_finished(self, html):
-        """预览生成完成"""
-        self.preview_browser.setHtml(html)
-
-    def on_preview_error(self, error):
-        """预览生成错误"""
-        self.preview_browser.setHtml(f"<p style='color: red;'>Preview error: {error}</p>")
+        if os.path.exists(image_path):
+            pixmap = QPixmap(image_path)
+            # 缩放图片以适应预览区域，保持宽高比
+            scaled = pixmap.scaledToWidth(400, Qt.SmoothTransformation)
+            if scaled.height() > 200:
+                scaled = pixmap.scaledToHeight(200, Qt.SmoothTransformation)
+            self.highlight_preview.setPixmap(scaled)
+        else:
+            self.highlight_preview.setText(f"预览图不存在: {style}")
 
     def on_file_dropped(self, file_path):
         self.current_file = file_path
