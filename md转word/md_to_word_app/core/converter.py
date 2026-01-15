@@ -58,7 +58,9 @@ def add_table_borders(table) -> None:
 def create_reference_docx(
     output_path: str,
     chinese_font: str = '宋体',
-    code_font: str = 'Times New Roman'
+    code_font: str = 'Times New Roman',
+    font_size: float = 12,
+    line_spacing: float = 1.5
 ) -> bool:
     """
     创建自定义 Word 参考模板
@@ -67,6 +69,8 @@ def create_reference_docx(
         output_path: 输出模板文件路径
         chinese_font: 中文字体名称
         code_font: 代码字体名称
+        font_size: 正文字体大小 (pt)
+        line_spacing: 行间距倍数
     """
     try:
         from docx import Document
@@ -100,11 +104,14 @@ def create_reference_docx(
         styles = doc.styles
 
         # 正文样式
+        from docx.enum.text import WD_LINE_SPACING
         if 'Normal' in [s.name for s in styles]:
             normal_style = styles['Normal']
             normal_style.font.name = chinese_font
             normal_style._element.rPr.rFonts.set(qn('w:eastAsia'), chinese_font)
-            normal_style.font.size = Pt(12)
+            normal_style.font.size = Pt(font_size)
+            if normal_style.paragraph_format:
+                normal_style.paragraph_format.line_spacing = line_spacing
 
         # 标题样式
         for i in range(1, 10):
@@ -166,7 +173,9 @@ def create_reference_docx(
 def apply_fonts_to_docx(
     docx_path: str,
     chinese_font: str = '宋体',
-    code_font: str = 'Times New Roman'
+    code_font: str = 'Times New Roman',
+    font_size: float = 12,
+    line_spacing: float = 1.5
 ) -> bool:
     """
     对生成的 Word 文档应用字体设置和表格边框
@@ -175,6 +184,8 @@ def apply_fonts_to_docx(
         docx_path: Word 文档路径
         chinese_font: 中文字体名称
         code_font: 代码字体名称
+        font_size: 正文字体大小 (pt)
+        line_spacing: 行间距倍数
     """
     try:
         from docx import Document
@@ -191,16 +202,19 @@ def apply_fonts_to_docx(
             style_name = para.style.name.lower() if para.style and para.style.name else ''
             is_heading = 'heading' in style_name
             is_toc = 'toc' in style_name
+            is_code = any(x in style_name for x in ['code', 'verbatim', 'source'])
 
+            # 设置行间距
             if is_toc:
                 para.paragraph_format.line_spacing = 1.0
                 para.paragraph_format.line_spacing_rule = WD_LINE_SPACING.SINGLE
+            elif not is_heading and not is_code:
+                para.paragraph_format.line_spacing = line_spacing
 
             for run in para.runs:
                 run_style = run.style.name.lower() if run.style and run.style.name else ''
 
-                if any(x in style_name for x in ['code', 'verbatim', 'source']) or \
-                   any(x in run_style for x in ['code', 'verbatim', 'source']):
+                if is_code or any(x in run_style for x in ['code', 'verbatim', 'source']):
                     run.font.name = code_font
                     run._element.rPr.rFonts.set(qn('w:ascii'), code_font)
                     run._element.rPr.rFonts.set(qn('w:hAnsi'), code_font)
@@ -219,6 +233,7 @@ def apply_fonts_to_docx(
                 else:
                     run.font.name = chinese_font
                     run._element.rPr.rFonts.set(qn('w:eastAsia'), chinese_font)
+                    run.font.size = Pt(font_size)
 
         # 表格处理
         for table in doc.tables:
@@ -229,6 +244,7 @@ def apply_fonts_to_docx(
                         for run in para.runs:
                             run.font.name = chinese_font
                             run._element.rPr.rFonts.set(qn('w:eastAsia'), chinese_font)
+                            run.font.size = Pt(font_size)
 
         doc.save(docx_path)
         return True
@@ -267,6 +283,8 @@ class ConverterService:
                 - highlight_style: 代码高亮样式
                 - chinese_font: 中文字体
                 - code_font: 代码字体
+                - font_size: 正文字体大小 (pt)
+                - line_spacing: 行间距倍数
         """
         if options is None:
             options = {}
@@ -276,6 +294,8 @@ class ConverterService:
         highlight_style = options.get('highlight_style', 'tango')
         chinese_font = options.get('chinese_font', '宋体')
         code_font = options.get('code_font', 'Times New Roman')
+        font_size = options.get('font_size', 12)
+        line_spacing = options.get('line_spacing', 1.5)
 
         # 检查输入文件
         if not os.path.exists(input_file):
@@ -295,7 +315,9 @@ class ConverterService:
             template_created = create_reference_docx(
                 reference_docx,
                 chinese_font=chinese_font,
-                code_font=code_font
+                code_font=code_font,
+                font_size=font_size,
+                line_spacing=line_spacing
             )
 
             # 预处理 Markdown
@@ -346,7 +368,9 @@ class ConverterService:
                 apply_fonts_to_docx(
                     output_file,
                     chinese_font=chinese_font,
-                    code_font=code_font
+                    code_font=code_font,
+                    font_size=font_size,
+                    line_spacing=line_spacing
                 )
 
                 file_size = os.path.getsize(output_file)

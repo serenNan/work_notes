@@ -589,7 +589,7 @@ class MainWindow(QMainWindow):
         """)
 
         # 标签
-        for label in [self.toc_depth_label, self.chinese_font_label, self.code_font_label, self.highlight_label]:
+        for label in [self.toc_depth_label, self.chinese_font_label, self.code_font_label, self.font_size_label, self.line_spacing_label, self.highlight_label]:
             label.setStyleSheet(f"""
                 color: {self.colors['text_secondary']};
                 font-size: 14px;
@@ -648,7 +648,7 @@ class MainWindow(QMainWindow):
     def setup_ui(self):
         self.setWindowTitle("Markdown to Word")
         self.setMinimumSize(500, 850)
-        self.resize(520, 950)
+        self.resize(520, 1020)
 
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
@@ -730,6 +730,32 @@ class MainWindow(QMainWindow):
         code_font_layout.addWidget(self.code_font_combo)
         code_font_layout.addStretch()
         options_layout.addLayout(code_font_layout)
+
+        # 字体大小
+        font_size_layout = QHBoxLayout()
+        font_size_layout.setSpacing(10)
+        self.font_size_label = QLabel("字体大小")
+        font_size_layout.addWidget(self.font_size_label)
+        self.font_size_combo = QComboBox()
+        self.font_size_combo.addItems(['10', '10.5', '11', '12', '14', '16'])
+        self.font_size_combo.setCurrentText('12')
+        self.font_size_combo.setFixedWidth(80)
+        font_size_layout.addWidget(self.font_size_combo)
+        font_size_layout.addStretch()
+        options_layout.addLayout(font_size_layout)
+
+        # 行间距
+        line_spacing_layout = QHBoxLayout()
+        line_spacing_layout.setSpacing(10)
+        self.line_spacing_label = QLabel("行间距")
+        line_spacing_layout.addWidget(self.line_spacing_label)
+        self.line_spacing_combo = QComboBox()
+        self.line_spacing_combo.addItems(['1.0', '1.15', '1.5', '2.0'])
+        self.line_spacing_combo.setCurrentText('1.5')
+        self.line_spacing_combo.setFixedWidth(80)
+        line_spacing_layout.addWidget(self.line_spacing_combo)
+        line_spacing_layout.addStretch()
+        options_layout.addLayout(line_spacing_layout)
 
         # 分割线2
         self.separator2 = QFrame()
@@ -881,7 +907,9 @@ class MainWindow(QMainWindow):
             'toc_depth': self.toc_depth_spin.value(),
             'highlight_style': self.highlight_combo.currentText(),
             'chinese_font': self.chinese_font_combo.currentText(),
-            'code_font': self.code_font_combo.currentText()
+            'code_font': self.code_font_combo.currentText(),
+            'font_size': float(self.font_size_combo.currentText()),
+            'line_spacing': float(self.line_spacing_combo.currentText())
         }
 
         self.convert_btn.setEnabled(False)
