@@ -589,7 +589,7 @@ class MainWindow(QMainWindow):
         """)
 
         # 标签
-        for label in [self.toc_depth_label, self.highlight_label]:
+        for label in [self.toc_depth_label, self.chinese_font_label, self.code_font_label, self.highlight_label]:
             label.setStyleSheet(f"""
                 color: {self.colors['text_secondary']};
                 font-size: 14px;
@@ -597,6 +597,7 @@ class MainWindow(QMainWindow):
             """)
 
         self.separator.setStyleSheet(f"background-color: {self.colors['border_subtle']}; max-height: 1px;")
+        self.separator2.setStyleSheet(f"background-color: {self.colors['border_subtle']}; max-height: 1px;")
 
         # 高亮预览
         self.highlight_preview.setStyleSheet(f"""
@@ -646,8 +647,8 @@ class MainWindow(QMainWindow):
 
     def setup_ui(self):
         self.setWindowTitle("Markdown to Word")
-        self.setMinimumSize(500, 750)
-        self.resize(520, 850)
+        self.setMinimumSize(500, 850)
+        self.resize(520, 950)
 
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
@@ -705,6 +706,35 @@ class MainWindow(QMainWindow):
         self.separator = QFrame()
         self.separator.setFrameShape(QFrame.HLine)
         options_layout.addWidget(self.separator)
+
+        # 中文字体
+        chinese_font_layout = QHBoxLayout()
+        chinese_font_layout.setSpacing(10)
+        self.chinese_font_label = QLabel("中文字体")
+        chinese_font_layout.addWidget(self.chinese_font_label)
+        self.chinese_font_combo = QComboBox()
+        self.chinese_font_combo.addItems(['宋体', '黑体', '微软雅黑', '楷体', '仿宋', '华文中宋'])
+        self.chinese_font_combo.setFixedWidth(120)
+        chinese_font_layout.addWidget(self.chinese_font_combo)
+        chinese_font_layout.addStretch()
+        options_layout.addLayout(chinese_font_layout)
+
+        # 代码字体
+        code_font_layout = QHBoxLayout()
+        code_font_layout.setSpacing(10)
+        self.code_font_label = QLabel("代码字体")
+        code_font_layout.addWidget(self.code_font_label)
+        self.code_font_combo = QComboBox()
+        self.code_font_combo.addItems(['Times New Roman', 'Consolas', 'Courier New', 'Source Code Pro', 'Monaco', 'Fira Code'])
+        self.code_font_combo.setFixedWidth(150)
+        code_font_layout.addWidget(self.code_font_combo)
+        code_font_layout.addStretch()
+        options_layout.addLayout(code_font_layout)
+
+        # 分割线2
+        self.separator2 = QFrame()
+        self.separator2.setFrameShape(QFrame.HLine)
+        options_layout.addWidget(self.separator2)
 
         # 代码高亮
         highlight_layout = QHBoxLayout()
@@ -849,7 +879,9 @@ class MainWindow(QMainWindow):
         options = {
             'generate_toc': self.toc_checkbox.isChecked(),
             'toc_depth': self.toc_depth_spin.value(),
-            'highlight_style': self.highlight_combo.currentText()
+            'highlight_style': self.highlight_combo.currentText(),
+            'chinese_font': self.chinese_font_combo.currentText(),
+            'code_font': self.code_font_combo.currentText()
         }
 
         self.convert_btn.setEnabled(False)
