@@ -16,6 +16,12 @@
 
 ## 关键配置
 
+### Conda 环境
+
+```bash
+conda activate word-tools
+```
+
 ### Pandoc 路径
 
 ```
