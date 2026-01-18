@@ -11,6 +11,7 @@ from typing import List, Dict, Tuple, Optional
 from docx import Document
 from docx.shared import Pt, Twips
 from docx.oxml.ns import qn
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 
 def get_numbering_format(doc, numId: int, level: int) -> dict:
@@ -225,6 +226,9 @@ def extract_cell_content_with_format(cell, doc=None, numbering_counters=None) ->
             text = run.text
             if not text:
                 continue
+
+            # 将软换行（Shift+Enter）转换为 <br> 标记，避免变成硬换行
+            text = text.replace('\n', '<br>')
 
             # 检查格式并添加标记
             is_bold = run.font.bold is True
@@ -494,6 +498,33 @@ def markdown_to_word(md_path: str, template_path: str, output_path: str) -> Tupl
         return False, f"无法保存 Word 文件: {e}"
 
 
+def insert_zwsp_for_chinese(text: str) -> str:
+    """
+    在中文字符之间插入零宽空格，让 Word 可以在中文任意位置换行
+    同时保持英文单词完整
+    """
+    if not text:
+        return text
+
+    result = []
+    prev_is_cjk = False
+
+    for char in text:
+        # 判断是否是 CJK（中日韩）字符
+        is_cjk = '\u4e00' <= char <= '\u9fff' or \
+                 '\u3400' <= char <= '\u4dbf' or \
+                 '\uf900' <= char <= '\ufaff'
+
+        # 如果前一个和当前都是中文，插入零宽空格
+        if prev_is_cjk and is_cjk:
+            result.append('\u200b')  # 零宽空格
+
+        result.append(char)
+        prev_is_cjk = is_cjk
+
+    return ''.join(result)
+
+
 def clear_paragraph_numbering(para) -> None:
     """清除段落的编号属性，避免重复编号"""
     try:
@@ -556,9 +587,13 @@ def fill_cell_with_format(cell, value: str) -> None:
         # 清除编号属性（确保新段落也没有编号）
         clear_paragraph_numbering(para)
 
-        # 恢复段落格式
-        if para_format['alignment']:
-            para.alignment = para_format['alignment']
+        # 处理对齐方式：居中保持居中，两端对齐改为左对齐
+        if para_format['alignment'] == WD_ALIGN_PARAGRAPH.CENTER:
+            para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        else:
+            # 两端对齐(JUSTIFY)或其他 -> 左对齐
+            para.alignment = WD_ALIGN_PARAGRAPH.LEFT
+
         if para_format['line_spacing']:
             para.paragraph_format.line_spacing = para_format['line_spacing']
 
@@ -577,21 +612,47 @@ def fill_cell_with_format(cell, value: str) -> None:
                     pass
 
             for run_data in runs_data:
-                run = para.add_run(run_data['text'])
-                # 应用基础格式
-                if base_format['font_name']:
-                    run.font.name = base_format['font_name']
-                    try:
-                        run._element.rPr.rFonts.set(qn('w:eastAsia'), base_format['font_name'])
-                    except Exception:
-                        pass
-                if base_format['font_size']:
-                    run.font.size = base_format['font_size']
-                # 应用粗体/斜体
-                if run_data['bold']:
-                    run.font.bold = True
-                if run_data['italic']:
-                    run.font.italic = True
+                text = run_data['text']
+                # 处理软换行标记 <br>
+                if '<br>' in text:
+                    parts = text.split('<br>')
+                    for i, part in enumerate(parts):
+                        if part:  # 非空部分
+                            run = para.add_run(insert_zwsp_for_chinese(part))
+                            # 应用基础格式
+                            if base_format['font_name']:
+                                run.font.name = base_format['font_name']
+                                try:
+                                    run._element.rPr.rFonts.set(qn('w:eastAsia'), base_format['font_name'])
+                                except Exception:
+                                    pass
+                            if base_format['font_size']:
+                                run.font.size = base_format['font_size']
+                            # 应用粗体/斜体
+                            if run_data['bold']:
+                                run.font.bold = True
+                            if run_data['italic']:
+                                run.font.italic = True
+                        # 添加软换行（除了最后一个部分）
+                        if i < len(parts) - 1:
+                            run = para.add_run()
+                            run.add_break()
+                else:
+                    run = para.add_run(insert_zwsp_for_chinese(text))
+                    # 应用基础格式
+                    if base_format['font_name']:
+                        run.font.name = base_format['font_name']
+                        try:
+                            run._element.rPr.rFonts.set(qn('w:eastAsia'), base_format['font_name'])
+                        except Exception:
+                            pass
+                    if base_format['font_size']:
+                        run.font.size = base_format['font_size']
+                    # 应用粗体/斜体
+                    if run_data['bold']:
+                        run.font.bold = True
+                    if run_data['italic']:
+                        run.font.italic = True
 
 
 def get_template_source(md_path: str) -> Optional[str]:
