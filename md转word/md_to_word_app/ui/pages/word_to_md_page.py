@@ -360,3 +360,14 @@ class WordToMdPage(QWidget):
                 background-color: {colors.get('outline', '#948F99')};
             }}
         """)
+
+    def set_preview_visible(self, visible: bool):
+        """显示或隐藏预览面板"""
+        self._preview_panel.setVisible(visible)
+        if visible:
+            # 恢复 55:45 比例
+            self._splitter.setSizes([550, 450])
+
+    def is_preview_visible(self) -> bool:
+        """预览面板是否可见"""
+        return self._preview_panel.isVisible()

@@ -21,6 +21,7 @@ from .components.header_bar import HeaderBar
 from .components.status_bar import StatusBar
 from .pages import MdToWordPage, WordToMdPage
 from .pages.history_view import HistoryView
+from core.settings_manager import get_settings_manager
 
 
 class MainWindow(QMainWindow):
@@ -34,9 +35,11 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self._theme = get_theme_manager()
+        self._settings = get_settings_manager()
         self._theme.theme_changed.connect(self._apply_theme)
         self._setup_ui()
         self._apply_theme(self._theme.colors)
+        self._load_settings()
 
     def _setup_ui(self):
         # 窗口设置
@@ -70,6 +73,7 @@ class MainWindow(QMainWindow):
         # 顶部栏
         self.header_bar = HeaderBar()
         self.header_bar.theme_toggle_clicked.connect(self._toggle_theme)
+        self.header_bar.preview_toggle_clicked.connect(self._toggle_preview)
         self.header_bar.minimize_clicked.connect(self.showMinimized)
         self.header_bar.maximize_clicked.connect(self._toggle_maximize)
         self.header_bar.close_clicked.connect(self.close)
@@ -190,3 +194,20 @@ class MainWindow(QMainWindow):
     def show_status(self, message: str, status_type: str = 'normal', duration: int = 3000):
         """显示状态消息"""
         self.status_bar.set_status(message, status_type, duration)
+
+    def _load_settings(self):
+        """加载并应用设置"""
+        # 加载预览面板可见性设置
+        preview_visible = self._settings.preview_visible
+        self._apply_preview_visibility(preview_visible)
+
+    def _toggle_preview(self):
+        """切换预览面板显示/隐藏"""
+        new_state = self._settings.toggle_preview()
+        self._apply_preview_visibility(new_state)
+
+    def _apply_preview_visibility(self, visible: bool):
+        """应用预览面板可见性"""
+        self.md_to_word_page.set_preview_visible(visible)
+        self.word_to_md_page.set_preview_visible(visible)
+        self.header_bar.set_preview_visible(visible)

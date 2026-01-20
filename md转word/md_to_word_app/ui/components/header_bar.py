@@ -53,9 +53,10 @@ class HeaderButton(QPushButton):
 class HeaderBar(QWidget):
     """
     顶部栏
-    包含: 标题 | 弹性空间 | 主题切换 | 窗口控制按钮
+    包含: 标题 | 弹性空间 | 预览开关 | 主题切换 | 窗口控制按钮
     """
     theme_toggle_clicked = pyqtSignal()
+    preview_toggle_clicked = pyqtSignal()
     minimize_clicked = pyqtSignal()
     maximize_clicked = pyqtSignal()
     close_clicked = pyqtSignal()
@@ -84,6 +85,12 @@ class HeaderBar(QWidget):
 
         # 弹性空间
         layout.addStretch()
+
+        # 预览开关按钮
+        self._preview_btn = HeaderButton('eye')
+        self._preview_btn.setToolTip('显示/隐藏预览')
+        self._preview_btn.clicked.connect(self.preview_toggle_clicked.emit)
+        layout.addWidget(self._preview_btn)
 
         # 主题切换按钮
         self._theme_btn = HeaderButton('moon')
@@ -164,11 +171,16 @@ class HeaderBar(QWidget):
 
         # 更新按钮图标
         self._theme_btn._icon_name = theme_icon
-        for btn in [self._theme_btn, self._minimize_btn, self._maximize_btn, self._close_btn]:
+        for btn in [self._preview_btn, self._theme_btn, self._minimize_btn, self._maximize_btn, self._close_btn]:
             btn.set_icon_color(icon_color)
             btn.set_hover_bg(hover_bg)
 
         self.update()
+
+    def set_preview_visible(self, visible: bool):
+        """更新预览按钮状态"""
+        # 可以更换图标来表示状态
+        self._preview_btn.setToolTip('隐藏预览' if visible else '显示预览')
 
     def paintEvent(self, event):
         painter = QPainter(self)

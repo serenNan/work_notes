@@ -121,15 +121,64 @@ class PreviewPanel(QWidget):
         filename = os.path.basename(file_path)
         self._filename_label.setText(filename)
 
-        # 读取文件内容
+        # 根据文件类型读取内容
+        ext = os.path.splitext(file_path)[1].lower()
+
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                content = f.read()
+            if ext == '.docx':
+                content = self._read_word_file(file_path)
+            elif ext in ['.md', '.markdown', '.txt', '.json', '.xml', '.html', '.css', '.js', '.py']:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+            else:
+                content = f"不支持预览此文件类型: {ext}"
+
             self._source_view.setPlainText(content)
             self._content_stack.setCurrentWidget(self._source_view)
         except Exception as e:
             self._source_view.setPlainText(f"无法读取文件: {str(e)}")
             self._content_stack.setCurrentWidget(self._source_view)
+
+    def _read_word_file(self, file_path: str) -> str:
+        """读取 Word 文件内容"""
+        try:
+            from docx import Document
+        except ImportError:
+            return "需要安装 python-docx 库才能预览 Word 文件\npip install python-docx"
+
+        try:
+            doc = Document(file_path)
+            lines = []
+
+            for para in doc.paragraphs:
+                text = para.text.strip()
+                if text:
+                    # 根据段落样式添加标记
+                    style_name = para.style.name if para.style else ''
+                    if 'Heading 1' in style_name:
+                        lines.append(f"# {text}")
+                    elif 'Heading 2' in style_name:
+                        lines.append(f"## {text}")
+                    elif 'Heading 3' in style_name:
+                        lines.append(f"### {text}")
+                    elif 'Heading' in style_name:
+                        lines.append(f"#### {text}")
+                    else:
+                        lines.append(text)
+                    lines.append("")  # 空行分隔
+
+            # 处理表格
+            for table in doc.tables:
+                lines.append("--- 表格 ---")
+                for row in table.rows:
+                    row_text = " | ".join(cell.text.strip() for cell in row.cells)
+                    lines.append(row_text)
+                lines.append("--- 表格结束 ---")
+                lines.append("")
+
+            return "\n".join(lines) if lines else "(文档为空)"
+        except Exception as e:
+            return f"读取 Word 文件失败: {str(e)}"
 
     def clear(self):
         """清除预览"""
