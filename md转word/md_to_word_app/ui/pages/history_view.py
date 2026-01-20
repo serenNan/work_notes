@@ -11,11 +11,10 @@ from PyQt5.QtWidgets import (
     QMessageBox, QMenu, QAction
 )
 from PyQt5.QtCore import Qt, pyqtSignal, QSize
-from PyQt5.QtGui import QColor, QIcon, QPixmap, QPainter
-from PyQt5.QtSvg import QSvgRenderer
+from PyQt5.QtGui import QColor
 
 from ..styles.scaling import scaled_size, scaled_spacing, scaled_font
-from ..styles.icons import get_icon_svg
+from ..styles.icons import render_icon_to_pixmap
 from ..components.material_card import MaterialCard
 from core.history_manager import get_history_manager, HistoryItem
 
@@ -76,18 +75,8 @@ class HistoryItemWidget(QWidget):
         # 更新图标
         icon_name = 'md_to_word' if self._item.conversion_type == 'md_to_word' else 'word_to_md'
         icon_color = colors.get('on_surface_variant', '#CAC4CF')
-
-        svg_data = get_icon_svg(icon_name, icon_color)
-        renderer = QSvgRenderer()
-        renderer.load(svg_data.encode('utf-8'))
-
         size = scaled_size(24)
-        pixmap = QPixmap(size, size)
-        pixmap.fill(Qt.transparent)
-        painter = QPainter(pixmap)
-        renderer.render(painter)
-        painter.end()
-
+        pixmap = render_icon_to_pixmap(icon_name, size, icon_color)
         self._icon_label.setPixmap(pixmap)
 
         # 更新状态图标
@@ -98,17 +87,8 @@ class HistoryItemWidget(QWidget):
             status_icon = 'error'
             status_color = colors.get('error', '#F2B8B5')
 
-        svg_data = get_icon_svg(status_icon, status_color)
-        renderer = QSvgRenderer()
-        renderer.load(svg_data.encode('utf-8'))
-
         size = scaled_size(16)
-        pixmap = QPixmap(size, size)
-        pixmap.fill(Qt.transparent)
-        painter = QPainter(pixmap)
-        renderer.render(painter)
-        painter.end()
-
+        pixmap = render_icon_to_pixmap(status_icon, size, status_color)
         self._status_label.setPixmap(pixmap)
 
         # 更新样式

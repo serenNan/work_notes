@@ -8,12 +8,11 @@ from PyQt5.QtWidgets import (
     QWidget, QHBoxLayout, QLabel, QPushButton, QSizePolicy
 )
 from PyQt5.QtCore import Qt, pyqtSignal, QSize
-from PyQt5.QtGui import QPainter, QColor, QIcon, QPixmap
-from PyQt5.QtSvg import QSvgRenderer
+from PyQt5.QtGui import QPainter, QColor, QIcon
 
 from ..styles.colors import WINDOW_SIZES
 from ..styles.scaling import scaled_size, scaled_spacing, scaled_font
-from ..styles.icons import get_icon_svg
+from ..styles.icons import render_icon_to_pixmap
 
 
 class HeaderButton(QPushButton):
@@ -36,18 +35,8 @@ class HeaderButton(QPushButton):
 
     def _update_icon(self):
         """更新图标"""
-        svg_data = get_icon_svg(self._icon_name, self._icon_color)
-
-        renderer = QSvgRenderer()
-        renderer.load(svg_data.encode('utf-8'))
-
         size = scaled_size(20)
-        pixmap = QPixmap(size, size)
-        pixmap.fill(Qt.transparent)
-        painter = QPainter(pixmap)
-        renderer.render(painter)
-        painter.end()
-
+        pixmap = render_icon_to_pixmap(self._icon_name, size, self._icon_color)
         self.setIcon(QIcon(pixmap))
         self.setIconSize(QSize(size, size))
 

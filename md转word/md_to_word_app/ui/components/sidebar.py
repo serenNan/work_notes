@@ -9,12 +9,11 @@ from PyQt5.QtWidgets import (
     QPushButton, QSpacerItem, QSizePolicy
 )
 from PyQt5.QtCore import Qt, pyqtSignal, QPropertyAnimation, QEasingCurve, QSize
-from PyQt5.QtGui import QPainter, QColor, QPainterPath, QIcon, QPixmap
-from PyQt5.QtSvg import QSvgRenderer
+from PyQt5.QtGui import QPainter, QColor, QPainterPath, QIcon
 
 from ..styles.colors import WINDOW_SIZES
 from ..styles.scaling import scaled_size, scaled_spacing
-from ..styles.icons import get_icon_svg
+from ..styles.icons import render_icon_to_pixmap
 from .ripple import RippleWidget
 
 
@@ -68,20 +67,8 @@ class NavItem(RippleWidget):
     def _update_icon(self):
         """更新图标"""
         color = self._selected_icon_color if self._selected else self._icon_color
-        svg_data = get_icon_svg(self._icon_name, color)
-
-        # 创建 SVG 渲染器
-        renderer = QSvgRenderer()
-        renderer.load(svg_data.encode('utf-8'))
-
-        # 渲染到 pixmap
         size = scaled_size(24)
-        pixmap = QPixmap(size, size)
-        pixmap.fill(Qt.transparent)
-        painter = QPainter(pixmap)
-        renderer.render(painter)
-        painter.end()
-
+        pixmap = render_icon_to_pixmap(self._icon_name, size, color)
         self._icon_label.setPixmap(pixmap)
 
     def set_selected(self, selected: bool):
@@ -331,16 +318,8 @@ class Sidebar(QWidget):
         # 更新折叠按钮图标
         icon_color = colors.get('on_surface_variant', '#CAC4CF')
         icon_name = 'chevron_left' if self._expanded else 'chevron_right'
-        svg_data = get_icon_svg(icon_name, icon_color)
-
-        renderer = QSvgRenderer()
-        renderer.load(svg_data.encode('utf-8'))
         size = scaled_size(24)
-        pixmap = QPixmap(size, size)
-        pixmap.fill(Qt.transparent)
-        painter = QPainter(pixmap)
-        renderer.render(painter)
-        painter.end()
+        pixmap = render_icon_to_pixmap(icon_name, size, icon_color)
 
         self._toggle_btn.setIcon(QIcon(pixmap))
         self._toggle_btn.setIconSize(QSize(size, size))

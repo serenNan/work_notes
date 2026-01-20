@@ -11,7 +11,7 @@ from .scaling import (
     scaled_font, scaled_size, scaled_spacing
 )
 from .elevation import apply_elevation, ElevatedWidget, ELEVATION_LEVELS
-from .icons import ICONS, get_icon_svg, get_icon_data_uri
+from .icons import ICONS, get_icon_svg, get_icon_data_uri, render_icon_to_pixmap
 
 __all__ = [
     # Colors
@@ -38,4 +38,5 @@ __all__ = [
     'ICONS',
     'get_icon_svg',
     'get_icon_data_uri',
+    'render_icon_to_pixmap',
 ]

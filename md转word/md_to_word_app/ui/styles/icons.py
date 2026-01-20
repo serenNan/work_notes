@@ -156,3 +156,54 @@ def get_icon_data_uri(name: str, color: str = '#FFFFFF') -> str:
     svg = get_icon_svg(name, color)
     encoded = base64.b64encode(svg.encode('utf-8')).decode('utf-8')
     return f"data:image/svg+xml;base64,{encoded}"
+
+
+def render_icon_to_pixmap(name: str, size: int, color: str = 'currentColor') -> 'QPixmap':
+    """
+    将 SVG 图标渲染为高清 QPixmap, 支持高 DPI 屏幕
+
+    Args:
+        name: 图标名称
+        size: 逻辑尺寸 (像素)
+        color: 颜色值
+
+    Returns:
+        渲染后的 QPixmap
+    """
+    from PyQt5.QtCore import Qt, QRectF
+    from PyQt5.QtGui import QPixmap, QPainter
+    from PyQt5.QtSvg import QSvgRenderer
+    from PyQt5.QtWidgets import QApplication
+
+    # 获取设备像素比 (在 AA_EnableHighDpiScaling 下仍需手动处理 pixmap)
+    app = QApplication.instance()
+    dpr = 1.0
+    if app:
+        screen = app.primaryScreen()
+        if screen:
+            dpr = screen.devicePixelRatio()
+
+    # 获取 SVG 数据
+    svg_data = get_icon_svg(name, color)
+
+    # 创建渲染器
+    renderer = QSvgRenderer()
+    renderer.load(svg_data.encode('utf-8'))
+
+    # 创建高分辨率 pixmap (物理像素)
+    physical_size = int(size * dpr)
+    pixmap = QPixmap(physical_size, physical_size)
+    pixmap.fill(Qt.transparent)
+
+    # 渲染到完整尺寸
+    painter = QPainter(pixmap)
+    painter.setRenderHint(QPainter.Antialiasing)
+    painter.setRenderHint(QPainter.SmoothPixmapTransform)
+    # 渲染 SVG 到完整 pixmap 尺寸
+    renderer.render(painter, QRectF(0, 0, physical_size, physical_size))
+    painter.end()
+
+    # 设置设备像素比 (让 Qt 知道这是高 DPI pixmap)
+    pixmap.setDevicePixelRatio(dpr)
+
+    return pixmap
