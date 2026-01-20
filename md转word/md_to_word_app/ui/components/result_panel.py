@@ -144,7 +144,9 @@ class ResultPanel(ThemedFrame):
         """打开输出文件所在文件夹"""
         if self.output_file and os.path.exists(self.output_file):
             if sys.platform == 'win32':
-                subprocess.run(f'explorer /select,"{self.output_file}"', shell=True)
+                # Windows需要反斜杠路径格式
+                normalized_path = os.path.normpath(self.output_file)
+                subprocess.run(f'explorer /select,"{normalized_path}"', shell=True)
             elif sys.platform == 'darwin':
                 subprocess.run(['open', '-R', self.output_file])
             else:
