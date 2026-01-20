@@ -10,6 +10,14 @@ from .result_panel import ResultPanel
 from .options_panel import OptionsPanel
 from .progress_bar import AnimatedProgressBar, StatusLabel
 
+# Material Design 组件
+from .ripple import RippleWidget, RippleButton, RippleEffect
+from .material_card import MaterialCard, MaterialCardOutlined, MaterialCardElevated, ContentCard
+from .sidebar import Sidebar, NavItem
+from .header_bar import HeaderBar, HeaderButton
+from .status_bar import StatusBar
+from .preview_panel import PreviewPanel, PreviewCard
+
 __all__ = [
     # Base
     'ThemedWidget',
@@ -31,4 +39,19 @@ __all__ = [
     # Progress
     'AnimatedProgressBar',
     'StatusLabel',
+    # Material Design
+    'RippleWidget',
+    'RippleButton',
+    'RippleEffect',
+    'MaterialCard',
+    'MaterialCardOutlined',
+    'MaterialCardElevated',
+    'ContentCard',
+    'Sidebar',
+    'NavItem',
+    'HeaderBar',
+    'HeaderButton',
+    'StatusBar',
+    'PreviewPanel',
+    'PreviewCard',
 ]

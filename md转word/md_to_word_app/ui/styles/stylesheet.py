@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 样式表生成器 - 根据颜色配置生成 QSS, 支持屏幕缩放
+Material Design 3 风格
 """
 
 from .scaling import scaled_font, scaled_size, scaled_spacing
@@ -21,7 +22,7 @@ def generate_stylesheet(colors: dict) -> str:
     checkbox_size = scaled_size(18)
 
     return f"""
-/* 全局样式 */
+/* 全局样式 - Material Design 3 */
 QMainWindow {{
     background-color: {colors['bg_dark']};
 }}
@@ -180,6 +181,61 @@ QSpinBox::up-button, QSpinBox::down-button {{
     border: none;
 }}
 
+/* 滚动条样式 */
+QScrollBar:vertical {{
+    background-color: transparent;
+    width: {scaled_size(8)}px;
+    margin: 0;
+}}
+
+QScrollBar::handle:vertical {{
+    background-color: {colors['border_default']};
+    border-radius: {scaled_size(4)}px;
+    min-height: {scaled_size(30)}px;
+}}
+
+QScrollBar::handle:vertical:hover {{
+    background-color: {colors['border_hover']};
+}}
+
+QScrollBar::add-line:vertical,
+QScrollBar::sub-line:vertical {{
+    height: 0;
+    background: none;
+}}
+
+QScrollBar::add-page:vertical,
+QScrollBar::sub-page:vertical {{
+    background: none;
+}}
+
+QScrollBar:horizontal {{
+    background-color: transparent;
+    height: {scaled_size(8)}px;
+    margin: 0;
+}}
+
+QScrollBar::handle:horizontal {{
+    background-color: {colors['border_default']};
+    border-radius: {scaled_size(4)}px;
+    min-width: {scaled_size(30)}px;
+}}
+
+QScrollBar::handle:horizontal:hover {{
+    background-color: {colors['border_hover']};
+}}
+
+QScrollBar::add-line:horizontal,
+QScrollBar::sub-line:horizontal {{
+    width: 0;
+    background: none;
+}}
+
+QScrollBar::add-page:horizontal,
+QScrollBar::sub-page:horizontal {{
+    background: none;
+}}
+
 /* 消息框样式 */
 QMessageBox {{
     background-color: {colors['bg_card']};
@@ -193,6 +249,61 @@ QMessageBox QLabel {{
 QMessageBox QPushButton {{
     min-width: {scaled_size(80)}px;
     padding: {scaled_spacing(7)}px {scaled_spacing(14)}px;
+}}
+
+/* QListWidget 样式 */
+QListWidget {{
+    background-color: transparent;
+    border: none;
+    outline: none;
+}}
+
+QListWidget::item {{
+    background-color: transparent;
+    border-radius: {radius}px;
+    padding: {scaled_spacing(4)}px;
+}}
+
+QListWidget::item:hover {{
+    background-color: {colors['bg_elevated']};
+}}
+
+QListWidget::item:selected {{
+    background-color: {colors.get('primary_container', colors['accent_primary'])};
+}}
+
+/* QTextEdit 样式 */
+QTextEdit {{
+    background-color: {colors['bg_secondary']};
+    color: {colors['text_primary']};
+    border: 1px solid {colors['border_subtle']};
+    border-radius: {radius}px;
+    padding: {scaled_spacing(8)}px;
+    selection-background-color: {colors.get('primary_container', colors['accent_primary'])};
+}}
+
+/* QSplitter 样式 */
+QSplitter::handle {{
+    background-color: {colors['border_subtle']};
+}}
+
+QSplitter::handle:hover {{
+    background-color: {colors['border_default']};
+}}
+
+/* QStackedWidget 样式 */
+QStackedWidget {{
+    background-color: {colors.get('surface', colors['bg_primary'])};
+}}
+
+/* 工具提示样式 */
+QToolTip {{
+    background-color: {colors['bg_card']};
+    color: {colors['text_primary']};
+    border: 1px solid {colors['border_default']};
+    border-radius: {scaled_size(4)}px;
+    padding: {scaled_spacing(4)}px {scaled_spacing(8)}px;
+    font-size: {fs_small}px;
 }}
 """
 

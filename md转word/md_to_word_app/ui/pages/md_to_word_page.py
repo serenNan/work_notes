@@ -1,18 +1,26 @@
 # -*- coding: utf-8 -*-
 """
-MD 转 Word 页面 - Markdown 到 Word 文档转换
+MD 转 Word 页面 - 双栏布局
+左侧: 工作面板 (文件选择、配置、转换)
+右侧: 预览面板 (Markdown 源码预览)
 """
 
 import os
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QFileDialog, QMessageBox
-from PyQt5.QtCore import QThread, pyqtSignal
+from PyQt5.QtWidgets import (
+    QWidget, QVBoxLayout, QHBoxLayout, QSplitter,
+    QFileDialog, QMessageBox, QLabel
+)
+from PyQt5.QtCore import QThread, pyqtSignal, Qt
 
 from ..components import (
     MarkdownDropZone, SecondaryButton, GradientButton,
     OptionsPanel, ResultPanel, AnimatedProgressBar
 )
-from ..styles import scaled_spacing
+from ..components.material_card import MaterialCard
+from ..components.preview_panel import PreviewPanel
+from ..styles.scaling import scaled_spacing, scaled_font
 from core.converter import ConverterService
+from core.history_manager import get_history_manager
 
 
 class ConverterThread(QThread):
@@ -45,19 +53,55 @@ class ConverterThread(QThread):
 
 
 class MdToWordPage(QWidget):
-    """MD 转 Word 页面"""
+    """
+    MD 转 Word 页面
+    双栏布局: 工作面板 | 预览面板
+    """
+    conversion_finished = pyqtSignal(bool, str)  # success, message
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self.current_file = None
         self.converter_thread = None
+        self._is_dark = True
+        self._colors = {}
+        self._history = get_history_manager()
         self._setup_ui()
 
     def _setup_ui(self):
-        layout = QVBoxLayout(self)
-        pad = scaled_spacing(12)
-        layout.setContentsMargins(pad, pad, pad, pad)
-        layout.setSpacing(scaled_spacing(10))
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(
+            scaled_spacing(16), scaled_spacing(16),
+            scaled_spacing(16), scaled_spacing(16)
+        )
+        layout.setSpacing(scaled_spacing(16))
+
+        # 使用 QSplitter 实现可调整的双栏
+        self._splitter = QSplitter(Qt.Horizontal)
+        self._splitter.setHandleWidth(scaled_spacing(8))
+
+        # 左侧: 工作面板
+        self._work_panel = self._create_work_panel()
+        self._splitter.addWidget(self._work_panel)
+
+        # 右侧: 预览面板
+        self._preview_panel = self._create_preview_panel()
+        self._splitter.addWidget(self._preview_panel)
+
+        # 设置初始比例 55:45
+        self._splitter.setSizes([550, 450])
+
+        layout.addWidget(self._splitter)
+
+    def _create_work_panel(self) -> QWidget:
+        """创建工作面板"""
+        card = MaterialCard(elevation=1)
+        layout = card.layout()
+
+        # 标题
+        title = QLabel("Markdown to Word")
+        title.setObjectName('panel_title')
+        layout.addWidget(title)
 
         # 拖拽区域
         self.drop_zone = MarkdownDropZone(hint_text="拖拽 Markdown 文件到这里")
@@ -89,11 +133,31 @@ class MdToWordPage(QWidget):
 
         layout.addStretch()
 
+        return card
+
+    def _create_preview_panel(self) -> QWidget:
+        """创建预览面板"""
+        card = MaterialCard(elevation=1)
+        layout = card.layout()
+
+        # 标题
+        title = QLabel("预览")
+        title.setObjectName('panel_title')
+        layout.addWidget(title)
+
+        # 预览区域
+        self._preview = PreviewPanel()
+        self._preview.refresh_requested.connect(self._refresh_preview)
+        layout.addWidget(self._preview, 1)
+
+        return card
+
     def _on_file_dropped(self, file_path: str):
         """文件拖拽处理"""
         self.current_file = file_path
         self.convert_btn.setEnabled(True)
         self.result_panel.clear()
+        self._preview.set_file(file_path)
 
     def _on_select_file(self):
         """选择文件处理"""
@@ -106,6 +170,7 @@ class MdToWordPage(QWidget):
             self.drop_zone.set_file(file_path)
             self.convert_btn.setEnabled(True)
             self.result_panel.clear()
+            self._preview.set_file(file_path)
 
     def _on_convert(self):
         """开始转换处理"""
@@ -142,9 +207,70 @@ class MdToWordPage(QWidget):
         self.progress_bar.stop()
         self.result_panel.show_result(output_file)
 
+        # 添加历史记录
+        self._history.add_record(
+            source_file=self.current_file,
+            output_file=output_file,
+            conversion_type='md_to_word',
+            status='success'
+        )
+
+        self.conversion_finished.emit(True, f"转换成功: {os.path.basename(output_file)}")
+
     def _on_error(self, error_message: str):
         """转换错误"""
         self.convert_btn.setEnabled(True)
         self.convert_btn.setText("开始转换")
         self.progress_bar.stop()
+
+        # 添加历史记录
+        if self.current_file:
+            self._history.add_record(
+                source_file=self.current_file,
+                output_file='',
+                conversion_type='md_to_word',
+                status='error',
+                message=error_message
+            )
+
+        self.conversion_finished.emit(False, f"转换失败: {error_message}")
         QMessageBox.critical(self, "转换失败", error_message)
+
+    def _refresh_preview(self):
+        """刷新预览"""
+        if self.current_file:
+            self._preview.set_file(self.current_file)
+
+    def set_theme(self, is_dark: bool, colors: dict):
+        """设置主题"""
+        self._is_dark = is_dark
+        self._colors = colors
+
+        # 更新卡片主题
+        self._work_panel.set_theme(is_dark, colors)
+        self._preview_panel.set_theme(is_dark, colors)
+        self._preview.set_theme(is_dark, colors)
+
+        # 更新标题样式
+        text_color = colors.get('on_surface', '#E3E3E3')
+        self.setStyleSheet(f"""
+            #panel_title {{
+                font-size: {scaled_font(18)}px;
+                font-weight: 600;
+                color: {text_color};
+                background: transparent;
+                padding-bottom: {scaled_spacing(12)}px;
+            }}
+        """)
+
+        # 更新 splitter 样式
+        handle_color = colors.get('outline_variant', '#49454F')
+        self._splitter.setStyleSheet(f"""
+            QSplitter::handle {{
+                background-color: {handle_color};
+                border-radius: 2px;
+            }}
+            QSplitter::handle:hover {{
+                background-color: {colors.get('outline', '#948F99')};
+            }}
+        """)
