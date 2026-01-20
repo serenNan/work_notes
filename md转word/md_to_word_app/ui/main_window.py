@@ -45,7 +45,7 @@ class MainWindow(QMainWindow):
         # 窗口设置
         self.setWindowTitle("MD to Word")
         self.setMinimumSize(WINDOW_SIZES['min_width'], WINDOW_SIZES['min_height'])
-        self.resize(WINDOW_SIZES['default_width'], WINDOW_SIZES['default_height'])
+        self.resize(WINDOW_SIZES['min_width'], WINDOW_SIZES['min_height'])
 
         # 无边框窗口 (可选, 暂时保留系统边框)
         # self.setWindowFlags(Qt.FramelessWindowHint)

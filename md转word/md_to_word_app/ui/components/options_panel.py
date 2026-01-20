@@ -180,13 +180,33 @@ class OptionsPanel(QGroupBox, ThemedMixin):
         image_path = os.path.join(base_dir, 'assets', '代码高亮图', filename)
 
         if os.path.exists(image_path):
+            from PyQt5.QtWidgets import QApplication
+
+            # 获取设备像素比
+            dpr = 1.0
+            app = QApplication.instance()
+            if app:
+                screen = app.primaryScreen()
+                if screen:
+                    dpr = screen.devicePixelRatio()
+
             pixmap = QPixmap(image_path)
-            # 缩放图片以适应预览区域, 保持宽高比
+
+            # 逻辑尺寸
             max_width = scaled_size(320)
             max_height = scaled_size(150)
-            scaled_pixmap = pixmap.scaledToWidth(max_width, Qt.SmoothTransformation)
-            if scaled_pixmap.height() > max_height:
-                scaled_pixmap = pixmap.scaledToHeight(max_height, Qt.SmoothTransformation)
+
+            # 物理尺寸 (考虑高 DPI)
+            physical_width = int(max_width * dpr)
+            physical_height = int(max_height * dpr)
+
+            # 缩放到物理尺寸, 保持宽高比
+            scaled_pixmap = pixmap.scaledToWidth(physical_width, Qt.SmoothTransformation)
+            if scaled_pixmap.height() > physical_height:
+                scaled_pixmap = pixmap.scaledToHeight(physical_height, Qt.SmoothTransformation)
+
+            # 设置设备像素比, 使显示清晰
+            scaled_pixmap.setDevicePixelRatio(dpr)
             self.highlight_preview.setPixmap(scaled_pixmap)
         else:
             self.highlight_preview.setText(f"Preview not found: {style}")
