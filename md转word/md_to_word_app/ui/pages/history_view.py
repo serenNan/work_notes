@@ -46,8 +46,11 @@ class HistoryItemWidget(QWidget):
         info_layout = QVBoxLayout()
         info_layout.setSpacing(scaled_spacing(2))
 
-        # 文件名
-        self._filename_label = QLabel(self._item.get_source_filename())
+        # 文件名 - 显示输出文件名 (用户关心的是转换结果)
+        output_filename = self._item.get_output_filename()
+        if not output_filename:
+            output_filename = self._item.get_source_filename()
+        self._filename_label = QLabel(output_filename)
         self._filename_label.setObjectName('history_filename')
         info_layout.addWidget(self._filename_label)
 
