@@ -8,10 +8,9 @@ Word 转 MD 页面 - 双栏布局
 import os
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QSplitter,
-    QLabel, QFrame, QFileDialog, QMessageBox, QScrollArea
+    QLabel, QFrame, QFileDialog, QMessageBox
 )
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QPalette
 
 from ..components import (
     WordDropZone, MarkdownDropZone, SecondaryButton, GradientButton,
@@ -70,30 +69,26 @@ class WordToMdPage(QWidget):
         card = MaterialCard(elevation=1)
         card_layout = card.layout()
 
-        # 创建滚动区域
-        scroll_area = QScrollArea()
-        scroll_area.setWidgetResizable(True)
-        scroll_area.setFrameShape(QScrollArea.NoFrame)
-        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        scroll_area.setObjectName('work_scroll_area')
-        self._work_scroll_area = scroll_area
+        # 主布局 - 上下均分
+        main_layout = QVBoxLayout()
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(scaled_spacing(12))
 
-        # 滚动区域内容容器
-        scroll_content = QWidget()
-        scroll_content.setObjectName('scroll_content')
-        layout = QVBoxLayout(scroll_content)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(scaled_spacing(12))
+        # ========== 上半部分: Word -> MD ==========
+        word_to_md_container = QWidget()
+        word_to_md_container.setObjectName('section_container')
+        w2m_layout = QVBoxLayout(word_to_md_container)
+        w2m_layout.setContentsMargins(0, 0, 0, 0)
+        w2m_layout.setSpacing(scaled_spacing(8))
 
-        # ========== Word -> MD ==========
         self.word_to_md_label = QLabel("Word -> Markdown")
         self.word_to_md_label.setObjectName('section_title')
-        layout.addWidget(self.word_to_md_label)
+        w2m_layout.addWidget(self.word_to_md_label)
 
         # Word 文件拖拽区域
         self.word_drop_zone = WordDropZone(hint_text="拖拽 Word 文件到这里")
         self.word_drop_zone.file_dropped.connect(self._on_word_file_dropped)
-        layout.addWidget(self.word_drop_zone)
+        w2m_layout.addWidget(self.word_drop_zone, 1)
 
         # Word 文件选择和转换按钮
         word_btn_layout = QHBoxLayout()
@@ -108,32 +103,39 @@ class WordToMdPage(QWidget):
         self.word_to_md_btn.setEnabled(False)
         word_btn_layout.addWidget(self.word_to_md_btn)
 
-        layout.addLayout(word_btn_layout)
+        w2m_layout.addLayout(word_btn_layout)
 
         # Word->MD 进度条
         self.w2m_progress = AnimatedProgressBar()
-        layout.addWidget(self.w2m_progress)
+        w2m_layout.addWidget(self.w2m_progress)
 
         # Word->MD 结果区域
         self.word_to_md_result = ResultPanel(success_text="转换成功!")
-        self.word_to_md_result.setMinimumHeight(scaled_size(80))
-        layout.addWidget(self.word_to_md_result)
+        w2m_layout.addWidget(self.word_to_md_result)
+
+        main_layout.addWidget(word_to_md_container, 1)
 
         # 分隔线
         self.separator = QFrame()
         self.separator.setFrameShape(QFrame.HLine)
         self.separator.setObjectName('section_separator')
-        layout.addWidget(self.separator)
+        main_layout.addWidget(self.separator)
 
-        # ========== MD -> Word ==========
+        # ========== 下半部分: MD -> Word ==========
+        md_to_word_container = QWidget()
+        md_to_word_container.setObjectName('section_container')
+        m2w_layout = QVBoxLayout(md_to_word_container)
+        m2w_layout.setContentsMargins(0, 0, 0, 0)
+        m2w_layout.setSpacing(scaled_spacing(8))
+
         self.md_to_word_label = QLabel("Markdown -> Word")
         self.md_to_word_label.setObjectName('section_title')
-        layout.addWidget(self.md_to_word_label)
+        m2w_layout.addWidget(self.md_to_word_label)
 
         # MD 文件拖拽区域
         self.md_drop_zone = MarkdownDropZone(hint_text="拖拽填充好的 MD 文件到这里")
         self.md_drop_zone.file_dropped.connect(self._on_md_file_dropped)
-        layout.addWidget(self.md_drop_zone)
+        m2w_layout.addWidget(self.md_drop_zone, 1)
 
         # MD 文件选择和转换按钮
         md_btn_layout = QHBoxLayout()
@@ -148,21 +150,19 @@ class WordToMdPage(QWidget):
         self.md_to_word_btn.setEnabled(False)
         md_btn_layout.addWidget(self.md_to_word_btn)
 
-        layout.addLayout(md_btn_layout)
+        m2w_layout.addLayout(md_btn_layout)
 
         # MD->Word 进度条
         self.m2w_progress = AnimatedProgressBar()
-        layout.addWidget(self.m2w_progress)
+        m2w_layout.addWidget(self.m2w_progress)
 
         # MD->Word 结果区域
         self.md_to_word_result = ResultPanel(success_text="填充成功!")
-        self.md_to_word_result.setMinimumHeight(scaled_size(80))
-        layout.addWidget(self.md_to_word_result)
+        m2w_layout.addWidget(self.md_to_word_result)
 
-        layout.addStretch()
+        main_layout.addWidget(md_to_word_container, 1)
 
-        scroll_area.setWidget(scroll_content)
-        card_layout.addWidget(scroll_area)
+        card_layout.addLayout(main_layout)
 
         return card
 
@@ -366,13 +366,9 @@ class WordToMdPage(QWidget):
             #section_separator {{
                 background-color: {border_color};
                 max-height: 1px;
-                margin: {scaled_spacing(12)}px 0;
+                margin: {scaled_spacing(4)}px 0;
             }}
-            #work_scroll_area {{
-                background: transparent;
-                border: none;
-            }}
-            #scroll_content {{
+            #section_container {{
                 background: transparent;
             }}
         """)

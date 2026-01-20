@@ -31,13 +31,13 @@ class FileDropZone(ThemedFrame):
         self._apply_theme(self.colors)
 
     def _setup_ui(self):
-        self.setMinimumHeight(scaled_size(100))
+        self.setMinimumHeight(scaled_size(130))
         self.setFrameStyle(QFrame.NoFrame)
 
         layout = QVBoxLayout(self)
         layout.setAlignment(Qt.AlignCenter)
-        layout.setSpacing(scaled_spacing(6))
-        layout.setContentsMargins(scaled_spacing(12), scaled_spacing(12), scaled_spacing(12), scaled_spacing(12))
+        layout.setSpacing(scaled_spacing(8))
+        layout.setContentsMargins(scaled_spacing(16), scaled_spacing(16), scaled_spacing(16), scaled_spacing(12))
 
         # 图标容器
         icon_size = scaled_size(48)
