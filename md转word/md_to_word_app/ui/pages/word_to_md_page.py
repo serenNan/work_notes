@@ -8,9 +8,10 @@ Word 转 MD 页面 - 双栏布局
 import os
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QSplitter,
-    QLabel, QFrame, QFileDialog, QMessageBox
+    QLabel, QFrame, QFileDialog, QMessageBox, QScrollArea
 )
 from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtGui import QPalette
 
 from ..components import (
     WordDropZone, MarkdownDropZone, SecondaryButton, GradientButton,
@@ -18,7 +19,7 @@ from ..components import (
 )
 from ..components.material_card import MaterialCard
 from ..components.preview_panel import PreviewPanel
-from ..styles.scaling import scaled_font, scaled_spacing
+from ..styles.scaling import scaled_font, scaled_spacing, scaled_size
 from core.word_md_bridge import word_to_markdown, markdown_to_word, get_template_source
 from core.history_manager import get_history_manager
 
@@ -67,7 +68,22 @@ class WordToMdPage(QWidget):
     def _create_work_panel(self) -> QWidget:
         """创建工作面板"""
         card = MaterialCard(elevation=1)
-        layout = card.layout()
+        card_layout = card.layout()
+
+        # 创建滚动区域
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setFrameShape(QScrollArea.NoFrame)
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        scroll_area.setObjectName('work_scroll_area')
+        self._work_scroll_area = scroll_area
+
+        # 滚动区域内容容器
+        scroll_content = QWidget()
+        scroll_content.setObjectName('scroll_content')
+        layout = QVBoxLayout(scroll_content)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(scaled_spacing(12))
 
         # ========== Word -> MD ==========
         self.word_to_md_label = QLabel("Word -> Markdown")
@@ -100,6 +116,7 @@ class WordToMdPage(QWidget):
 
         # Word->MD 结果区域
         self.word_to_md_result = ResultPanel(success_text="转换成功!")
+        self.word_to_md_result.setMinimumHeight(scaled_size(80))
         layout.addWidget(self.word_to_md_result)
 
         # 分隔线
@@ -139,9 +156,13 @@ class WordToMdPage(QWidget):
 
         # MD->Word 结果区域
         self.md_to_word_result = ResultPanel(success_text="填充成功!")
+        self.md_to_word_result.setMinimumHeight(scaled_size(80))
         layout.addWidget(self.md_to_word_result)
 
         layout.addStretch()
+
+        scroll_area.setWidget(scroll_content)
+        card_layout.addWidget(scroll_area)
 
         return card
 
@@ -346,6 +367,13 @@ class WordToMdPage(QWidget):
                 background-color: {border_color};
                 max-height: 1px;
                 margin: {scaled_spacing(12)}px 0;
+            }}
+            #work_scroll_area {{
+                background: transparent;
+                border: none;
+            }}
+            #scroll_content {{
+                background: transparent;
             }}
         """)
 
