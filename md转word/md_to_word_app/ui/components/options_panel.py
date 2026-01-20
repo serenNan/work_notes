@@ -5,7 +5,7 @@
 
 import os
 from PyQt5.QtWidgets import (
-    QGroupBox, QVBoxLayout, QHBoxLayout,
+    QGroupBox, QVBoxLayout, QHBoxLayout, QGridLayout,
     QLabel, QCheckBox, QComboBox, QSpinBox, QFrame
 )
 from PyQt5.QtCore import Qt, pyqtSignal
@@ -58,59 +58,45 @@ class OptionsPanel(QGroupBox, ThemedMixin):
         self.separator1.setFrameShape(QFrame.HLine)
         layout.addWidget(self.separator1)
 
-        # 中文字体
-        chinese_font_layout = QHBoxLayout()
-        chinese_font_layout.setSpacing(scaled_spacing(8))
+        # 字体设置 - 2x2 网格布局
+        font_grid = QGridLayout()
+        font_grid.setSpacing(scaled_spacing(8))
+        font_grid.setColumnStretch(1, 1)
+        font_grid.setColumnStretch(3, 1)
+
+        # 第一行: 中文字体 | 代码字体
         self.chinese_font_label = QLabel("中文字体")
-        chinese_font_layout.addWidget(self.chinese_font_label)
+        font_grid.addWidget(self.chinese_font_label, 0, 0)
         self.chinese_font_combo = QComboBox()
         self.chinese_font_combo.addItems(['宋体', '黑体', '微软雅黑', '楷体', '仿宋', '华文中宋'])
-        self.chinese_font_combo.setFixedWidth(scaled_size(100))
         self.chinese_font_combo.currentTextChanged.connect(self._emit_changed)
-        chinese_font_layout.addWidget(self.chinese_font_combo)
-        chinese_font_layout.addStretch()
-        layout.addLayout(chinese_font_layout)
+        font_grid.addWidget(self.chinese_font_combo, 0, 1)
 
-        # 代码字体
-        code_font_layout = QHBoxLayout()
-        code_font_layout.setSpacing(scaled_spacing(8))
         self.code_font_label = QLabel("代码字体")
-        code_font_layout.addWidget(self.code_font_label)
+        font_grid.addWidget(self.code_font_label, 0, 2)
         self.code_font_combo = QComboBox()
         self.code_font_combo.addItems(['Times New Roman', 'Consolas', 'Courier New', 'Source Code Pro', 'Monaco', 'Fira Code'])
-        self.code_font_combo.setFixedWidth(scaled_size(130))
         self.code_font_combo.currentTextChanged.connect(self._emit_changed)
-        code_font_layout.addWidget(self.code_font_combo)
-        code_font_layout.addStretch()
-        layout.addLayout(code_font_layout)
+        font_grid.addWidget(self.code_font_combo, 0, 3)
 
-        # 字体大小
-        font_size_layout = QHBoxLayout()
-        font_size_layout.setSpacing(scaled_spacing(8))
+        # 第二行: 字体大小 | 行间距
         self.font_size_label = QLabel("字体大小")
-        font_size_layout.addWidget(self.font_size_label)
+        font_grid.addWidget(self.font_size_label, 1, 0)
         self.font_size_combo = QComboBox()
         self.font_size_combo.addItems(['10', '10.5', '11', '12', '14', '16'])
         self.font_size_combo.setCurrentText('12')
-        self.font_size_combo.setFixedWidth(scaled_size(70))
         self.font_size_combo.currentTextChanged.connect(self._emit_changed)
-        font_size_layout.addWidget(self.font_size_combo)
-        font_size_layout.addStretch()
-        layout.addLayout(font_size_layout)
+        font_grid.addWidget(self.font_size_combo, 1, 1)
 
-        # 行间距
-        line_spacing_layout = QHBoxLayout()
-        line_spacing_layout.setSpacing(scaled_spacing(8))
         self.line_spacing_label = QLabel("行间距")
-        line_spacing_layout.addWidget(self.line_spacing_label)
+        font_grid.addWidget(self.line_spacing_label, 1, 2)
         self.line_spacing_combo = QComboBox()
         self.line_spacing_combo.addItems(['1.0', '1.15', '1.5', '2.0'])
         self.line_spacing_combo.setCurrentText('1.5')
-        self.line_spacing_combo.setFixedWidth(scaled_size(70))
         self.line_spacing_combo.currentTextChanged.connect(self._emit_changed)
-        line_spacing_layout.addWidget(self.line_spacing_combo)
-        line_spacing_layout.addStretch()
-        layout.addLayout(line_spacing_layout)
+        font_grid.addWidget(self.line_spacing_combo, 1, 3)
+
+        layout.addLayout(font_grid)
 
         # 分割线 2
         self.separator2 = QFrame()
