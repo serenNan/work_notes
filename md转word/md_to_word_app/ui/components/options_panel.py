@@ -12,6 +12,7 @@ from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QPixmap
 from .base import ThemedMixin
 from ..styles import get_theme_manager, scaled_font, scaled_size, scaled_spacing
+from core.settings_manager import get_settings_manager
 
 
 class OptionsPanel(QGroupBox, ThemedMixin):
@@ -24,6 +25,7 @@ class OptionsPanel(QGroupBox, ThemedMixin):
 
     def __init__(self, parent=None):
         super().__init__("转换选项", parent)
+        self._settings = get_settings_manager()
         self._init_theme()
         self._setup_ui()
         self._apply_theme(self.colors)
@@ -33,20 +35,20 @@ class OptionsPanel(QGroupBox, ThemedMixin):
         layout.setSpacing(scaled_spacing(10))
         layout.setContentsMargins(scaled_spacing(12), scaled_spacing(16), scaled_spacing(12), scaled_spacing(12))
 
-        # 生成目录
+        # 生成目录 - 使用设置中的默认值
         self.toc_checkbox = QCheckBox("生成目录")
-        self.toc_checkbox.setChecked(True)
+        self.toc_checkbox.setChecked(self._settings.default_toc_enabled)
         self.toc_checkbox.stateChanged.connect(self._on_toc_changed)
         layout.addWidget(self.toc_checkbox)
 
-        # 目录深度
+        # 目录深度 - 使用设置中的默认值
         toc_depth_layout = QHBoxLayout()
         toc_depth_layout.setSpacing(scaled_spacing(8))
         self.toc_depth_label = QLabel("目录深度")
         toc_depth_layout.addWidget(self.toc_depth_label)
         self.toc_depth_spin = QSpinBox()
         self.toc_depth_spin.setRange(1, 6)
-        self.toc_depth_spin.setValue(3)
+        self.toc_depth_spin.setValue(self._settings.default_toc_depth)
         self.toc_depth_spin.setFixedWidth(scaled_size(60))
         self.toc_depth_spin.valueChanged.connect(self._emit_changed)
         toc_depth_layout.addWidget(self.toc_depth_spin)
@@ -64,11 +66,12 @@ class OptionsPanel(QGroupBox, ThemedMixin):
         font_grid.setColumnStretch(1, 1)
         font_grid.setColumnStretch(3, 1)
 
-        # 第一行: 中文字体 | 代码字体
+        # 第一行: 中文字体 | 代码字体 - 使用设置中的默认值
         self.chinese_font_label = QLabel("中文字体")
         font_grid.addWidget(self.chinese_font_label, 0, 0)
         self.chinese_font_combo = QComboBox()
         self.chinese_font_combo.addItems(['宋体', '黑体', '微软雅黑', '楷体', '仿宋', '华文中宋'])
+        self.chinese_font_combo.setCurrentText(self._settings.default_chinese_font)
         self.chinese_font_combo.currentTextChanged.connect(self._emit_changed)
         font_grid.addWidget(self.chinese_font_combo, 0, 1)
 
@@ -76,15 +79,16 @@ class OptionsPanel(QGroupBox, ThemedMixin):
         font_grid.addWidget(self.code_font_label, 0, 2)
         self.code_font_combo = QComboBox()
         self.code_font_combo.addItems(['Times New Roman', 'Consolas', 'Courier New', 'Source Code Pro', 'Monaco', 'Fira Code'])
+        self.code_font_combo.setCurrentText(self._settings.default_code_font)
         self.code_font_combo.currentTextChanged.connect(self._emit_changed)
         font_grid.addWidget(self.code_font_combo, 0, 3)
 
-        # 第二行: 字体大小 | 行间距
+        # 第二行: 字体大小 | 行间距 - 使用设置中的默认值
         self.font_size_label = QLabel("字体大小")
         font_grid.addWidget(self.font_size_label, 1, 0)
         self.font_size_combo = QComboBox()
         self.font_size_combo.addItems(['10', '10.5', '11', '12', '14', '16'])
-        self.font_size_combo.setCurrentText('12')
+        self.font_size_combo.setCurrentText(self._settings.default_font_size)
         self.font_size_combo.currentTextChanged.connect(self._emit_changed)
         font_grid.addWidget(self.font_size_combo, 1, 1)
 
@@ -92,7 +96,7 @@ class OptionsPanel(QGroupBox, ThemedMixin):
         font_grid.addWidget(self.line_spacing_label, 1, 2)
         self.line_spacing_combo = QComboBox()
         self.line_spacing_combo.addItems(['1.0', '1.15', '1.5', '2.0'])
-        self.line_spacing_combo.setCurrentText('1.5')
+        self.line_spacing_combo.setCurrentText(self._settings.default_line_spacing)
         self.line_spacing_combo.currentTextChanged.connect(self._emit_changed)
         font_grid.addWidget(self.line_spacing_combo, 1, 3)
 
@@ -103,13 +107,14 @@ class OptionsPanel(QGroupBox, ThemedMixin):
         self.separator2.setFrameShape(QFrame.HLine)
         layout.addWidget(self.separator2)
 
-        # 代码高亮
+        # 代码高亮 - 使用设置中的默认值
         highlight_layout = QHBoxLayout()
         highlight_layout.setSpacing(scaled_spacing(8))
         self.highlight_label = QLabel("代码高亮")
         highlight_layout.addWidget(self.highlight_label)
         self.highlight_combo = QComboBox()
         self.highlight_combo.addItems(['tango', 'pygments', 'espresso', 'monochrome', 'kate', 'zenburn'])
+        self.highlight_combo.setCurrentText(self._settings.default_highlight_style)
         self.highlight_combo.setFixedWidth(scaled_size(100))
         self.highlight_combo.currentTextChanged.connect(self._on_highlight_changed)
         highlight_layout.addWidget(self.highlight_combo)
@@ -121,7 +126,7 @@ class OptionsPanel(QGroupBox, ThemedMixin):
         self.highlight_preview.setAlignment(Qt.AlignCenter)
         self.highlight_preview.setMinimumHeight(scaled_size(60))
         layout.addWidget(self.highlight_preview)
-        self._update_highlight_preview('tango')
+        self._update_highlight_preview(self._settings.default_highlight_style)
 
     def _apply_theme(self, colors: dict):
         # 组框样式

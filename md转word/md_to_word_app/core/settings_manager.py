@@ -13,6 +13,7 @@ class SettingsManager(QObject):
     """
     # 信号
     preview_visible_changed = pyqtSignal(bool)
+    settings_changed = pyqtSignal()
 
     _instance = None
 
@@ -60,6 +61,7 @@ class SettingsManager(QObject):
     def is_dark_theme(self, value: bool):
         """设置主题"""
         self._settings.setValue('ui/dark_theme', value)
+        self.settings_changed.emit()
 
     # ========== 窗口设置 ==========
 
@@ -78,6 +80,127 @@ class SettingsManager(QObject):
     def load_window_state(self):
         """加载窗口状态"""
         return self._settings.value('window/state')
+
+    # ========== 转换默认值设置 ==========
+
+    @property
+    def default_toc_enabled(self) -> bool:
+        """默认是否生成目录"""
+        return self._settings.value('convert/toc_enabled', True, type=bool)
+
+    @default_toc_enabled.setter
+    def default_toc_enabled(self, value: bool):
+        self._settings.setValue('convert/toc_enabled', value)
+        self.settings_changed.emit()
+
+    @property
+    def default_toc_depth(self) -> int:
+        """默认目录深度"""
+        return self._settings.value('convert/toc_depth', 3, type=int)
+
+    @default_toc_depth.setter
+    def default_toc_depth(self, value: int):
+        self._settings.setValue('convert/toc_depth', value)
+        self.settings_changed.emit()
+
+    @property
+    def default_chinese_font(self) -> str:
+        """默认中文字体"""
+        return self._settings.value('convert/chinese_font', '宋体', type=str)
+
+    @default_chinese_font.setter
+    def default_chinese_font(self, value: str):
+        self._settings.setValue('convert/chinese_font', value)
+        self.settings_changed.emit()
+
+    @property
+    def default_code_font(self) -> str:
+        """默认代码字体"""
+        return self._settings.value('convert/code_font', 'Times New Roman', type=str)
+
+    @default_code_font.setter
+    def default_code_font(self, value: str):
+        self._settings.setValue('convert/code_font', value)
+        self.settings_changed.emit()
+
+    @property
+    def default_font_size(self) -> str:
+        """默认字体大小"""
+        return self._settings.value('convert/font_size', '12', type=str)
+
+    @default_font_size.setter
+    def default_font_size(self, value: str):
+        self._settings.setValue('convert/font_size', value)
+        self.settings_changed.emit()
+
+    @property
+    def default_line_spacing(self) -> str:
+        """默认行间距"""
+        return self._settings.value('convert/line_spacing', '1.5', type=str)
+
+    @default_line_spacing.setter
+    def default_line_spacing(self, value: str):
+        self._settings.setValue('convert/line_spacing', value)
+        self.settings_changed.emit()
+
+    @property
+    def default_highlight_style(self) -> str:
+        """默认代码高亮风格"""
+        return self._settings.value('convert/highlight_style', 'tango', type=str)
+
+    @default_highlight_style.setter
+    def default_highlight_style(self, value: str):
+        self._settings.setValue('convert/highlight_style', value)
+        self.settings_changed.emit()
+
+    # ========== 路径设置 ==========
+
+    @property
+    def pandoc_path(self) -> str:
+        """Pandoc 路径"""
+        default = r'S:\Tools\Miniconda\envs\pandoc\Library\bin\pandoc.exe'
+        return self._settings.value('paths/pandoc', default, type=str)
+
+    @pandoc_path.setter
+    def pandoc_path(self, value: str):
+        self._settings.setValue('paths/pandoc', value)
+        self.settings_changed.emit()
+
+    @property
+    def default_output_dir(self) -> str:
+        """默认输出目录 (空字符串表示与源文件同目录)"""
+        return self._settings.value('paths/output_dir', '', type=str)
+
+    @default_output_dir.setter
+    def default_output_dir(self, value: str):
+        self._settings.setValue('paths/output_dir', value)
+        self.settings_changed.emit()
+
+    # ========== 历史记录设置 ==========
+
+    @property
+    def max_history_count(self) -> int:
+        """最大历史记录数量"""
+        return self._settings.value('history/max_count', 50, type=int)
+
+    @max_history_count.setter
+    def max_history_count(self, value: int):
+        self._settings.setValue('history/max_count', value)
+        self.settings_changed.emit()
+
+    # ========== 获取所有转换默认值 ==========
+
+    def get_default_options(self) -> dict:
+        """获取所有转换默认选项"""
+        return {
+            'toc': self.default_toc_enabled,
+            'toc_depth': self.default_toc_depth,
+            'chinese_font': self.default_chinese_font,
+            'code_font': self.default_code_font,
+            'font_size': self.default_font_size,
+            'line_spacing': self.default_line_spacing,
+            'highlight_style': self.default_highlight_style,
+        }
 
 
 # 全局实例

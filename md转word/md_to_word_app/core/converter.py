@@ -9,8 +9,8 @@ import subprocess
 import re
 from typing import Tuple, Dict, Any, Optional
 
-# Pandoc 可执行文件路径
-PANDOC_PATH = r'S:\Tools\Miniconda\envs\pandoc\Library\bin\pandoc.exe'
+# 默认 Pandoc 可执行文件路径 (可在设置中修改)
+DEFAULT_PANDOC_PATH = r'S:\Tools\Miniconda\envs\pandoc\Library\bin\pandoc.exe'
 
 
 def preprocess_markdown(content: str) -> str:
@@ -257,7 +257,9 @@ class ConverterService:
     """Markdown 转 Word 转换服务"""
 
     def __init__(self):
-        self.pandoc_path = PANDOC_PATH
+        from .settings_manager import get_settings_manager
+        self._settings = get_settings_manager()
+        self.pandoc_path = self._settings.pandoc_path
 
     def check_pandoc(self) -> Tuple[bool, str]:
         """检查 Pandoc 是否可用"""

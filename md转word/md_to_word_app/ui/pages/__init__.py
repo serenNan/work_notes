@@ -6,9 +6,11 @@
 from .md_to_word_page import MdToWordPage
 from .word_to_md_page import WordToMdPage
 from .history_view import HistoryView
+from .settings_page import SettingsPage
 
 __all__ = [
     'MdToWordPage',
     'WordToMdPage',
     'HistoryView',
+    'SettingsPage',
 ]

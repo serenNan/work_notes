@@ -19,7 +19,7 @@ from .styles.scaling import scaled_size
 from .components.sidebar import Sidebar
 from .components.header_bar import HeaderBar
 from .components.status_bar import StatusBar
-from .pages import MdToWordPage, WordToMdPage
+from .pages import MdToWordPage, WordToMdPage, SettingsPage
 from .pages.history_view import HistoryView
 from core.settings_manager import get_settings_manager
 
@@ -96,8 +96,10 @@ class MainWindow(QMainWindow):
         self.history_view.open_file_requested.connect(self._open_file)
         self.content_stack.addWidget(self.history_view)
 
-        # 设置页面 (占位)
-        self.settings_page = QWidget()
+        # 设置页面
+        self.settings_page = SettingsPage()
+        self.settings_page.theme_change_requested.connect(self._on_theme_change_requested)
+        self.settings_page.history_cleared.connect(self._on_history_cleared)
         self.content_stack.addWidget(self.settings_page)
 
         right_layout.addWidget(self.content_stack, 1)
@@ -190,6 +192,7 @@ class MainWindow(QMainWindow):
         self.md_to_word_page.set_theme(is_dark, colors)
         self.word_to_md_page.set_theme(is_dark, colors)
         self.history_view.set_theme(is_dark, colors)
+        self.settings_page.set_theme(is_dark, colors)
 
     def show_status(self, message: str, status_type: str = 'normal', duration: int = 3000):
         """显示状态消息"""
@@ -211,3 +214,13 @@ class MainWindow(QMainWindow):
         self.md_to_word_page.set_preview_visible(visible)
         self.word_to_md_page.set_preview_visible(visible)
         self.header_bar.set_preview_visible(visible)
+
+    def _on_theme_change_requested(self, is_dark: bool):
+        """处理设置页面的主题切换请求"""
+        if is_dark != self._theme.is_dark:
+            self._theme.toggle()
+
+    def _on_history_cleared(self):
+        """处理历史记录清除"""
+        self.history_view.refresh()
+        self.status_bar.show_success("历史记录已清除", 3000)
