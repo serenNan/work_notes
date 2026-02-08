@@ -42,8 +42,12 @@ def find_pyqt5_plugins():
 
     return None
 
-def build():
-    """执行打包"""
+def build(onefile=False):
+    """执行打包
+
+    Args:
+        onefile: True 打包成单个exe (启动慢), False 打包成文件夹 (启动快)
+    """
     # 获取当前目录
     current_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -68,7 +72,6 @@ def build():
         sys.executable, "-m", "PyInstaller",
         "--name", app_name,
         "--windowed",  # 不显示控制台窗口
-        "--onefile",   # 打包成单个 exe
         "--noconfirm", # 不询问确认
         "--clean",     # 清理临时文件
         # 添加 assets 目录
@@ -85,6 +88,14 @@ def build():
         "--distpath", dist_dir,
         "--workpath", build_dir,
     ]
+
+    # 打包模式
+    if onefile:
+        cmd.append("--onefile")  # 单个exe, 启动慢
+        print("Mode: onefile (single exe, slower startup)")
+    else:
+        cmd.append("--onedir")   # 文件夹, 启动快
+        print("Mode: onedir (folder, faster startup)")
 
     # 如果找到插件目录，添加到打包
     if plugins_path:

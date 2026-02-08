@@ -7,10 +7,103 @@ import os
 import sys
 import subprocess
 import re
-from typing import Tuple, Dict, Any, Optional
+import shutil
+from typing import Tuple, Dict, Any, Optional, List
+
+
+def find_pandoc() -> str:
+    """
+    自动查找 Pandoc 可执行文件路径
+
+    按以下优先级查找:
+    1. PATH 环境变量中的 pandoc
+    2. 常见安装位置 (Conda 环境、系统默认路径等)
+    3. 硬编码的 fallback 路径
+
+    Returns:
+        Pandoc 可执行文件的路径，如果找不到则返回空字符串
+    """
+    # 根据平台确定可执行文件名
+    is_windows = sys.platform == 'win32'
+    exe_name = 'pandoc.exe' if is_windows else 'pandoc'
+
+    # 1. 首先在 PATH 中查找
+    pandoc_in_path = shutil.which('pandoc')
+    if pandoc_in_path and os.path.isfile(pandoc_in_path):
+        return pandoc_in_path
+
+    # 2. 检查常见安装位置
+    common_paths: List[str] = []
+
+    if is_windows:
+        # Windows 常见路径
+        conda_base = os.environ.get('CONDA_PREFIX', '')
+        user_profile = os.environ.get('USERPROFILE', '')
+        program_files = os.environ.get('PROGRAMFILES', r'C:\Program Files')
+        program_files_x86 = os.environ.get('PROGRAMFILES(X86)', r'C:\Program Files (x86)')
+        local_app_data = os.environ.get('LOCALAPPDATA', '')
+
+        common_paths = [
+            # 当前 Conda 环境
+            os.path.join(conda_base, 'Library', 'bin', exe_name) if conda_base else '',
+            os.path.join(conda_base, 'Scripts', exe_name) if conda_base else '',
+            # 用户级别安装
+            os.path.join(local_app_data, 'Pandoc', exe_name) if local_app_data else '',
+            os.path.join(user_profile, 'AppData', 'Local', 'Pandoc', exe_name) if user_profile else '',
+            # 系统级别安装
+            os.path.join(program_files, 'Pandoc', exe_name),
+            os.path.join(program_files_x86, 'Pandoc', exe_name),
+            # Scoop 安装
+            os.path.join(user_profile, 'scoop', 'shims', exe_name) if user_profile else '',
+            # Chocolatey 安装
+            os.path.join(os.environ.get('ChocolateyInstall', r'C:\ProgramData\chocolatey'), 'bin', exe_name),
+            # 硬编码 fallback (原始路径)
+            r'S:\Tools\Miniconda\envs\pandoc\Library\bin\pandoc.exe',
+        ]
+    else:
+        # Linux/macOS 常见路径
+        home = os.path.expanduser('~')
+        conda_base = os.environ.get('CONDA_PREFIX', '')
+
+        common_paths = [
+            # 当前 Conda 环境
+            os.path.join(conda_base, 'bin', exe_name) if conda_base else '',
+            # 系统路径
+            '/usr/bin/pandoc',
+            '/usr/local/bin/pandoc',
+            '/opt/homebrew/bin/pandoc',  # macOS Homebrew (Apple Silicon)
+            '/home/linuxbrew/.linuxbrew/bin/pandoc',  # Linux Homebrew
+            # 用户级别安装
+            os.path.join(home, '.local', 'bin', 'pandoc'),
+            os.path.join(home, '.cabal', 'bin', 'pandoc'),
+        ]
+
+    # 过滤空字符串并检查路径
+    for path in common_paths:
+        if path and os.path.isfile(path):
+            return path
+
+    # 3. 没有找到，返回空字符串
+    return ''
+
+
+def get_default_pandoc_path() -> str:
+    """
+    获取默认的 Pandoc 路径
+
+    优先使用自动检测，如果检测失败则返回 fallback 路径
+    """
+    detected = find_pandoc()
+    if detected:
+        return detected
+    # Fallback: 返回一个合理的默认值（用户需要手动配置）
+    if sys.platform == 'win32':
+        return 'pandoc.exe'
+    return 'pandoc'
+
 
 # 默认 Pandoc 可执行文件路径 (可在设置中修改)
-DEFAULT_PANDOC_PATH = r'S:\Tools\Miniconda\envs\pandoc\Library\bin\pandoc.exe'
+DEFAULT_PANDOC_PATH = get_default_pandoc_path()
 
 
 def preprocess_markdown(content: str) -> str:
@@ -60,7 +153,8 @@ def create_reference_docx(
     chinese_font: str = '宋体',
     code_font: str = 'Times New Roman',
     font_size: float = 12,
-    line_spacing: float = 1.5
+    line_spacing: float = 1.5,
+    pandoc_path: Optional[str] = None
 ) -> bool:
     """
     创建自定义 Word 参考模板
@@ -71,6 +165,7 @@ def create_reference_docx(
         code_font: 代码字体名称
         font_size: 正文字体大小 (pt)
         line_spacing: 行间距倍数
+        pandoc_path: Pandoc 可执行文件路径 (None 时使用自动检测)
     """
     try:
         from docx import Document
@@ -79,11 +174,14 @@ def create_reference_docx(
     except ImportError:
         return False
 
+    # 使用传入的路径或自动检测
+    actual_pandoc_path = pandoc_path or DEFAULT_PANDOC_PATH
+
     temp_template = output_path + '.temp'
 
     try:
         result = subprocess.run(
-            [PANDOC_PATH, '--print-default-data-file', 'reference.docx'],
+            [actual_pandoc_path, '--print-default-data-file', 'reference.docx'],
             capture_output=True,
             check=False
         )
@@ -319,7 +417,8 @@ class ConverterService:
                 chinese_font=chinese_font,
                 code_font=code_font,
                 font_size=font_size,
-                line_spacing=line_spacing
+                line_spacing=line_spacing,
+                pandoc_path=self.pandoc_path
             )
 
             # 预处理 Markdown

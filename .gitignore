@@ -1,8 +1,20 @@
+# IDE / Editor
 .vscode/
 .history/
+
+# Build / Cache
 screenshots/
 build/
 .cache/
 __pycache__/
 *.pyc
+
+# OS
 .DS_Store
+Thumbs.db
+
+# Obsidian
+.obsidian/
+
+# Claude Code
+.claude/

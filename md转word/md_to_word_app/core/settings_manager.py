@@ -158,8 +158,13 @@ class SettingsManager(QObject):
     @property
     def pandoc_path(self) -> str:
         """Pandoc 路径"""
-        default = r'S:\Tools\Miniconda\envs\pandoc\Library\bin\pandoc.exe'
-        return self._settings.value('paths/pandoc', default, type=str)
+        # 检查是否有用户配置的路径
+        saved_path = self._settings.value('paths/pandoc', '', type=str)
+        if saved_path:
+            return saved_path
+        # 没有配置则使用自动检测
+        from .converter import find_pandoc, get_default_pandoc_path
+        return get_default_pandoc_path()
 
     @pandoc_path.setter
     def pandoc_path(self, value: str):
